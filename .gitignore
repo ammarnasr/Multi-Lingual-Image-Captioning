@@ -154,5 +154,5 @@ cython_debug/
 
 # My stuff
 *.ipynb
-# data/
+data/
 # checkpoints/
