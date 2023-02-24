@@ -4,8 +4,25 @@ import numpy as np
 import transformers
 from PIL import Image
 from multilingual_clip import pt_multilingual_clip
+from clip.simple_tokenizer import SimpleTokenizer
+clip_tokenizer = SimpleTokenizer()
 
 
+def load_image(image_id):
+    image_path = 'data/Images/' + image_id
+    image = Image.open(image_path)
+    return image
+
+
+def tokenize_text(caption):
+    t = torch.tensor(clip_tokenizer.encode(caption), dtype=torch.int64)
+    t = torch.nn.functional.pad(t, (0, 77 - t.shape[0]), value=0)
+    return t
+
+
+def decode_tokens(tokens):
+    t = tokens[tokens != 0].tolist()
+    return clip_tokenizer.decode(t)
 
 def load_tokenizer(model_name = 'M-CLIP/XLM-Roberta-Large-Vit-L-14'):
     '''

@@ -1,0 +1,37 @@
+{
+    "exp1" :
+    {
+        "data_dir" : "./data",
+        "model_dir" : "./checkpoints",
+        "model_name" : "model1",
+        "batch_size": 24,
+        "lang": "ar",
+        "embed_size": 512,
+        "hidden_size": 512,
+        "num_layers": 1,
+        "num_epochs": 60,
+        "print_every": 10,
+        "save_every": 1,
+        "lr": 0.01,
+        "clip_model": "ViT-B/16",
+        "checkpoint": "./checkpoints/model1-60.pth"
+    },
+    "clip-rnn-en" :
+    {
+        "model_dir" : "./checkpoints",
+        "model_name" : "rnn-eng-hd512",
+        "batch_size": 24,
+        "lang": "en",
+        "embed_size": 512,
+        "hidden_size": 512,
+        "num_layers": 1,
+        "num_epochs": 60,
+        "print_every": 10,
+        "save_every": 1,
+        "lr": 0.01,
+        "clip_model": "ViT-B/16",
+        "checkpoint": "",
+        "use_checkpoint": false
+    }
+    
+}

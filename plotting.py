@@ -1,5 +1,8 @@
-import matplotlib.pyplot as plt
 import numpy as np
+from PIL import Image
+import arabic_reshaper
+import matplotlib.pyplot as plt
+from bidi.algorithm import get_display
 
 def plot_heatmap(result_matrix):
   height, width = result_matrix.shape
@@ -19,3 +22,18 @@ def plot_heatmap(result_matrix):
 
   fig.tight_layout()
   plt.show()
+
+
+def display_image_and_caption(image_id, caption_en = [], capions_ar = []):
+    image_path = 'data/Images/' + image_id
+    image = Image.open(image_path)
+    plt.imshow(image)
+    caption = ''
+    for c in caption_en:
+        caption += c + '\n'
+    for c in capions_ar:
+        c = get_display(arabic_reshaper.reshape(c))
+        caption += c + '\n'
+    plt.title(caption)
+    plt.axis('off')
+    plt.show()
