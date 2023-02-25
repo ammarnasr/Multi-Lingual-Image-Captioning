@@ -56,7 +56,7 @@ def get_decoder(embed_size, hidden_size, vocab_size, num_layers, checkpoint='', 
     decoder = DecoderRNN(embed_size, hidden_size, vocab_size, num_layers, device=device)
     if use_checkpoint:
         decoder.load_state_dict(torch.load(checkpoint))
-        start_epoch = int(checkpoint.split('-')[-1].split('.')[0])
+        start_epoch = int(checkpoint.split('-')[-2])
     return decoder, start_epoch
 
 def get_vocab(lang):

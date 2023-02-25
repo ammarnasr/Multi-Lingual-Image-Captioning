@@ -34,7 +34,7 @@ class DecoderRNN(nn.Module):
       outputs = self.fc( lstm_out )       
       return outputs
 
-    def Predict(self, inputs, max_len=20):        
+    def Predict(self, inputs, max_len=20, end_token=1):        
         final_output = []
         batch_size = inputs.shape[0]         
         hidden = self.init_hidden(batch_size) 
@@ -45,7 +45,7 @@ class DecoderRNN(nn.Module):
             outputs = outputs.squeeze(1) 
             _, max_idx = torch.max(outputs, dim=1) 
             final_output.append(max_idx.cpu().numpy()[0].item())             
-            if (max_idx == 1 or len(final_output) >=20 ):
+            if (max_idx == end_token or len(final_output) >=max_len ):
                 break
             
             inputs = self.word_embedding(max_idx) 

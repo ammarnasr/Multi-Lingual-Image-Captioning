@@ -37,3 +37,22 @@ def display_image_and_caption(image_id, caption_en = [], capions_ar = []):
     plt.title(caption)
     plt.axis('off')
     plt.show()
+
+
+def fix_arabic_text(text):
+    return get_display(arabic_reshaper.reshape(text))
+
+def imshow(img, title, ax=None, ar=False):
+    """Imshow for Tensor."""
+    if ax is None:
+        fig, ax = plt.subplots()
+    img = img.numpy().transpose((1, 2, 0))
+    mean = np.array([0.485, 0.456, 0.406])
+    std = np.array([0.229, 0.224, 0.225])
+    img = std * img + mean
+    img = np.clip(img, 0, 1)
+    ax.imshow(img)
+    if ar:
+        title = fix_arabic_text(title)
+    ax.set_title(title)
+    return ax
