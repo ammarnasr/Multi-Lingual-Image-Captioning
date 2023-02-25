@@ -46,7 +46,7 @@ def train_model(encoder, decoder, data_loader, loss_function, optimizer, num_epo
                 print('pred: ',vocab.indices_to_caption(prdicted_indices, lang=lang))
         # Save the model checkpoints
         if epoch % save_every == 0:
-            torch.save(encoder.state_dict(), os.path.join(model_dir, '{}-{}-.ckpt'.format(model_name, epoch+1)))
+            torch.save(decoder.state_dict(), os.path.join(model_dir, '{}-{}-.ckpt'.format(model_name, epoch+1)))
             print('model saved to {}'.format(model_dir))
 
     return encoder
