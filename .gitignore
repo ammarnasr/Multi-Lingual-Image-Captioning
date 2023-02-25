@@ -153,6 +153,6 @@ cython_debug/
 
 
 # My stuff
-*.ipynb
+playground.ipynb
 data/
-# checkpoints/
+checkpoints/
