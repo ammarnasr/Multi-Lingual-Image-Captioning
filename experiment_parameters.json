@@ -3,7 +3,7 @@
     {
         "model_dir" : "./checkpoints",
         "model_name" : "rnn-eng-hd512",
-        "batch_size": 256,
+        "batch_size": 128,
         "lang": "en",
         "embed_size": 512,
         "hidden_size": 512,
@@ -20,7 +20,7 @@
     {
         "model_dir" : "./checkpoints",
         "model_name" : "rnn-ar-hd512",
-        "batch_size": 256,
+        "batch_size": 128,
         "lang": "ar",
         "embed_size": 512,
         "hidden_size": 512,
