@@ -1,11 +1,10 @@
 {
-    "exp1" :
+    "clip-rnn-en" :
     {
-        "data_dir" : "./data",
         "model_dir" : "./checkpoints",
-        "model_name" : "model1",
+        "model_name" : "rnn-eng-hd512",
         "batch_size": 24,
-        "lang": "ar",
+        "lang": "en",
         "embed_size": 512,
         "hidden_size": 512,
         "num_layers": 1,
@@ -14,14 +13,15 @@
         "save_every": 1,
         "lr": 0.01,
         "clip_model": "ViT-B/16",
-        "checkpoint": "./checkpoints/model1-60.pth"
+        "checkpoint": "",
+        "use_checkpoint": false
     },
-    "clip-rnn-en" :
+    "clip-rnn-ar" :
     {
         "model_dir" : "./checkpoints",
-        "model_name" : "rnn-eng-hd512",
-        "batch_size": 24,
-        "lang": "en",
+        "model_name" : "rnn-ar-hd512",
+        "batch_size": 128,
+        "lang": "ar",
         "embed_size": 512,
         "hidden_size": 512,
         "num_layers": 1,
