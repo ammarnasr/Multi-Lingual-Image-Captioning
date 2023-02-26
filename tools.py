@@ -5,6 +5,11 @@ import transformers
 from PIL import Image
 from multilingual_clip import pt_multilingual_clip
 from clip.simple_tokenizer import SimpleTokenizer
+import os
+import json
+import argparse
+
+
 clip_tokenizer = SimpleTokenizer()
 
 
@@ -80,3 +85,15 @@ def compare_embeddings(logit_scale, img_embs, txt_embs):
 
     # shape = [global_batch_size, global_batch_size]
     return logits_per_image, logits_per_text
+
+
+
+
+def save_config(args: argparse.Namespace):
+    config = {}
+    for key, item in args._get_kwargs():
+        config[key] = item
+    out_path = os.path.join(args.out_dir, f"{args.prefix}.json")
+    with open(out_path, 'w') as outfile:
+        json.dump(config, outfile)
+
