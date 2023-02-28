@@ -83,11 +83,11 @@ class DemoArgs:
         self.data = 'data/oscar_split_ViT-B_32_train_arabic.pkl'
         self.out_dir = './checkpoints'
         self.prefix = 'coco_prefix'
-        self.epochs = 1
+        self.epochs = 10
         self.save_every = 1
         self.prefix_length = 10
         self.prefix_length_clip = 10
-        self.bs = 2
+        self.bs = 32
         self.only_prefix = True
         self.mapping_type = 'mlp'
         self.num_layers = 8
