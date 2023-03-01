@@ -14,7 +14,7 @@ from IPython.display import Image
 from models import ClipCaptionModel, ClipCaptionPrefix
 import matplotlib.pyplot as plt
 from plotting import fix_arabic_text
-
+from train_gpt import DemoArgs
 
 N = type(None)
 V = np.array
@@ -111,7 +111,9 @@ if __name__ == '__main__':
     clip_model, preprocess = clip.load("ViT-B/32", device=device, jit=False)
     tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 
-    model = ClipCaptionModel(prefix_length)
+    args = DemoArgs()
+    model = ClipCaptionPrefix(prefix_length, clip_length=args.prefix_length_clip, prefix_size=512, num_layers=args.num_layers, mapping_type=args.mapping_type)
+    # model = ClipCaptionModel(prefix_length)
     model.load_state_dict(torch.load(model_path, map_location='cpu'))
     model.eval()
     model = model.to(device)
