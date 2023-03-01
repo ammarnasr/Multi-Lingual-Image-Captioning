@@ -13,6 +13,7 @@ import PIL.Image
 from IPython.display import Image 
 from models import ClipCaptionModel, ClipCaptionPrefix
 import matplotlib.pyplot as plt
+from plotting import fix_arabic_text
 
 
 N = type(None)
@@ -81,6 +82,10 @@ def generate2(model, tokenizer, tokens=None, prompt=None, embed=None, entry_coun
 if __name__ == '__main__':
     model_path = sys.argv[1]
     image_path = sys.argv[2]
+    if len(sys.argv) > 3:
+        lang = sys.argv[3]
+    else:
+        lang = 'en'
     device = 'cuda' if torch.cuda.is_available() else "cpu"
     prefix_length = 10
 
@@ -104,5 +109,7 @@ if __name__ == '__main__':
     #display pil_image using plt
     plt.imshow(pil_image)
     plt.axis('off')
+    if lang == 'ar':
+        generated_text_prefix = fix_arabic_text(generated_text_prefix)
     plt.title(generated_text_prefix)
     plt.show()

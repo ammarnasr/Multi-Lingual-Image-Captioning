@@ -159,3 +159,4 @@ checkpoints/
 data.zip
 *.ipynb
 pretrained_models/
+laion/

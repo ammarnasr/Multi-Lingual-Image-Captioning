@@ -8,7 +8,7 @@ import sys
 import argparse
 import json
 from typing import  Union
-from dataset import ClipGPTFlickr8kDataset
+from dataset import ClipGPTFlickr8kDataset, ClipGPTLaion5bArabicDataset
 from models import ClipCaptionModel, ClipCaptionPrefix
 
 def load_model(config_path: str, epoch_or_latest: Union[str, int] = '_latest'):
@@ -87,7 +87,7 @@ class DemoArgs:
         self.save_every = 1
         self.prefix_length = 10
         self.prefix_length_clip = 10
-        self.bs = 32
+        self.bs = 1
         self.only_prefix = True
         self.mapping_type = 'mlp'
         self.num_layers = 8
@@ -109,7 +109,20 @@ def main(lang):
     sys.stdout.flush()
     train(dataset, model, args, output_dir=args.out_dir, output_prefix=output_prefix)
 
+
+def main2():
+    args = DemoArgs()
+    args.data = 'laion\laion_part4_ViT-B_32_train.pkl'
+    output_prefix = 'arabic_prefix_laion'
+    dataset = ClipGPTLaion5bArabicDataset(args.data, args.prefix_length, normalize_prefix=args.normalize_prefix)
+    prefix_dim = 640 if args.is_rn else 512
+    model = ClipCaptionPrefix(args.prefix_length, clip_length=args.prefix_length_clip, prefix_size=prefix_dim, num_layers=args.num_layers)
+    print("Train only prefix")
+    sys.stdout.flush()
+    train(dataset, model, args, output_dir=args.out_dir, output_prefix=output_prefix)
+
 if __name__ == '__main__':
     #read the arguments from the command line
-    lang = sys.argv[1]
-    main(lang)
+    # lang = sys.argv[1]
+    # main(lang)
+    main2()
