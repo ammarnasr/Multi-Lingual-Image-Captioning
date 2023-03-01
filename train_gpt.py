@@ -112,9 +112,9 @@ def main(lang):
 
 def main2():
     args = DemoArgs()
-    args.data = 'laion\laion_part4_ViT-B_32_train.pkl'
+    args.data = './data/laion_part4_ViT-B_32_train.pkl'
     output_prefix = 'arabic_prefix_laion'
-    dataset = ClipGPTLaion5bArabicDataset(args.data, args.prefix_length, normalize_prefix=args.normalize_prefix)
+    dataset = ClipGPTFlickr8kDataset(args.data, args.prefix_length, normalize_prefix=args.normalize_prefix)
     prefix_dim = 640 if args.is_rn else 512
     model = ClipCaptionPrefix(args.prefix_length, clip_length=args.prefix_length_clip, prefix_size=prefix_dim, num_layers=args.num_layers)
     print("Train only prefix")
