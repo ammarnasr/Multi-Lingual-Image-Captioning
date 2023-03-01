@@ -87,7 +87,7 @@ class DemoArgs:
         self.save_every = 1
         self.prefix_length = 10
         self.prefix_length_clip = 10
-        self.bs = 1
+        self.bs = 24
         self.only_prefix = True
         self.mapping_type = 'mlp'
         self.num_layers = 8
