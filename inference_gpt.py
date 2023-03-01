@@ -15,6 +15,7 @@ from models import ClipCaptionModel, ClipCaptionPrefix
 import matplotlib.pyplot as plt
 from plotting import fix_arabic_text
 from train_gpt import DemoArgs
+from transformers import AutoTokenizer, AutoModelWithLMHead
 
 N = type(None)
 V = np.array
@@ -68,6 +69,10 @@ def generate2(model, tokenizer, tokens=None, prompt=None, embed=None, entry_coun
                 generated = torch.cat((generated, next_token_embed), dim=1)
                 if stop_token_index == next_token.item():
                     break
+                if tokenizer.decode(tokens.squeeze().cpu().numpy())[-1] == '،':
+                    break
+                if tokenizer.decode(tokens.squeeze().cpu().numpy())[-1] == '.':
+                    break
 
             output_list = list(tokens.squeeze().cpu().numpy())
             output_text = tokenizer.decode(output_list)
@@ -85,14 +90,14 @@ def generate_caption(image_path, model, clip_model, tokenizer ,prefix_length,  l
     with torch.no_grad():
         prefix = clip_model.encode_image(image).to(device, dtype=torch.float32)
         prefix_embed = model.clip_project(prefix).reshape(1, prefix_length, -1)
-        generated_text_prefix = generate2(model, tokenizer, embed=prefix_embed)
+        generated_text_prefix = generate2(model, tokenizer, embed=prefix_embed, entry_length=10)
 
-    print(generated_text_prefix)
     #display pil_image using plt
     plt.imshow(pil_image)
     plt.axis('off')
     if lang == 'ar':
         generated_text_prefix = fix_arabic_text(generated_text_prefix)
+    print(generated_text_prefix)
     plt.title(generated_text_prefix)
     plt.show()
 
@@ -101,15 +106,18 @@ def generate_caption(image_path, model, clip_model, tokenizer ,prefix_length,  l
 
 if __name__ == '__main__':
     model_path = sys.argv[1]
-    if len(sys.argv) > 2:
-        lang = sys.argv[2]
-    else:
-        lang = 'en'
+    lang = 'en'
+    if 'arabic' in model_path:
+        lang = 'ar'
     device = 'cuda' if torch.cuda.is_available() else "cpu"
     prefix_length = 10
 
     clip_model, preprocess = clip.load("ViT-B/32", device=device, jit=False)
-    tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+    if lang == 'ar':
+        tokenizer = AutoTokenizer.from_pretrained("akhooli/gpt2-small-arabic")
+    else:
+        tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+
 
     args = DemoArgs()
     model = ClipCaptionPrefix(prefix_length, clip_length=args.prefix_length_clip, prefix_size=512, num_layers=args.num_layers, mapping_type=args.mapping_type)
