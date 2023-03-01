@@ -8,8 +8,8 @@ import sys
 import argparse
 import json
 from typing import  Union
-from dataset import ClipGPTFlickr8kDataset, ClipGPTLaion5bArabicDataset
-from models import ClipCaptionModel, ClipCaptionPrefix
+from dataset import ClipGPTFlickr8kDataset
+from models import ClipCaptionModel, ClipCaptionPrefix, MappingType
 
 def load_model(config_path: str, epoch_or_latest: Union[str, int] = '_latest'):
     with open(config_path) as f:
@@ -89,17 +89,13 @@ class DemoArgs:
         self.save_every = 1
         self.prefix_length = 10
         self.prefix_length_clip = 10
-        self.bs = 24
+        self.bs = 40
         self.only_prefix = True
         self.mapping_type = 'transformer'
         self.num_layers = 8
         self.is_rn = False
         self.normalize_prefix = False
 
-from enum import Enum
-class MappingType(Enum):
-    MLP = 'mlp'
-    Transformer = 'transformer'
 
 
 

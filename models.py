@@ -2,6 +2,12 @@ import torch
 import torch.nn as nn
 from transformers import GPT2LMHeadModel
 from typing import Tuple, Optional
+import torch
+import torch.nn as nn
+from torch.nn import functional as nnf
+from typing import Tuple, Optional
+from enum import Enum
+
 
 
 device =  torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -57,6 +63,10 @@ class DecoderRNN(nn.Module):
 
 
 
+
+class MappingType(Enum):
+    MLP = 'mlp'
+    Transformer = 'transformer'
 
 
 class MLP(nn.Module):
