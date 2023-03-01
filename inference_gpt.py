@@ -77,26 +77,8 @@ def generate2(model, tokenizer, tokens=None, prompt=None, embed=None, entry_coun
 
 
 
-
-
-if __name__ == '__main__':
-    model_path = sys.argv[1]
-    image_path = sys.argv[2]
-    if len(sys.argv) > 3:
-        lang = sys.argv[3]
-    else:
-        lang = 'en'
-    device = 'cuda' if torch.cuda.is_available() else "cpu"
-    prefix_length = 10
-
-    clip_model, preprocess = clip.load("ViT-B/32", device=device, jit=False)
-    tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
-
-    model = ClipCaptionModel(prefix_length)
-    model.load_state_dict(torch.load(model_path, map_location='cpu'))
-    model.eval()
-    model = model.to(device)
-
+def generate_caption(image_path, model, clip_model, tokenizer ,prefix_length,  lang ,device):
+    
     image = io.imread(image_path)
     pil_image = PIL.Image.fromarray(image)
     image = preprocess(pil_image).unsqueeze(0).to(device)
@@ -113,3 +95,28 @@ if __name__ == '__main__':
         generated_text_prefix = fix_arabic_text(generated_text_prefix)
     plt.title(generated_text_prefix)
     plt.show()
+
+
+
+
+if __name__ == '__main__':
+    model_path = sys.argv[1]
+    if len(sys.argv) > 2:
+        lang = sys.argv[2]
+    else:
+        lang = 'en'
+    device = 'cuda' if torch.cuda.is_available() else "cpu"
+    prefix_length = 10
+
+    clip_model, preprocess = clip.load("ViT-B/32", device=device, jit=False)
+    tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+
+    model = ClipCaptionModel(prefix_length)
+    model.load_state_dict(torch.load(model_path, map_location='cpu'))
+    model.eval()
+    model = model.to(device)
+    sample_images_dir = './sample_image'
+
+    sample_images_paths = [os.path.join(sample_images_dir, image_name) for image_name in os.listdir(sample_images_dir)]
+    for image_path in sample_images_paths:
+        generate_caption(image_path, model, clip_model, tokenizer, prefix_length, lang, device)

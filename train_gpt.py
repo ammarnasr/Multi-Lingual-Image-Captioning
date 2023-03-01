@@ -77,6 +77,8 @@ def train(dataset: ClipGPTFlickr8kDataset, model: ClipCaptionModel, args,
             )
     return model
 
+
+
 #create a class called demo args to store the arguments
 class DemoArgs:
     def __init__(self):
@@ -89,40 +91,35 @@ class DemoArgs:
         self.prefix_length_clip = 10
         self.bs = 1
         self.only_prefix = True
-        self.mapping_type = 'mlp'
+        self.mapping_type = 'transformer'
         self.num_layers = 8
         self.is_rn = False
         self.normalize_prefix = False
 
-def main(lang):
-    args = DemoArgs()
-    if lang == 'arabic':
-        args.data = './data/oscar_split_ViT-B_32_train_arabic.pkl'
-        output_prefix = 'arabic_prefix'
-    if lang == 'english':
-        args.data = './data/oscar_split_ViT-B_32_train.pkl'
-        output_prefix = 'english_prefix'
-    dataset = ClipGPTFlickr8kDataset(args.data, args.prefix_length, normalize_prefix=args.normalize_prefix)
-    prefix_dim = 640 if args.is_rn else 512
-    model = ClipCaptionPrefix(args.prefix_length, clip_length=args.prefix_length_clip, prefix_size=prefix_dim, num_layers=args.num_layers)
-    print("Train only prefix")
-    sys.stdout.flush()
-    train(dataset, model, args, output_dir=args.out_dir, output_prefix=output_prefix)
+from enum import Enum
+class MappingType(Enum):
+    MLP = 'mlp'
+    Transformer = 'transformer'
 
 
-def main2():
+
+def main(output_prefix):
     args = DemoArgs()
-    args.data = 'laion\laion_part4_ViT-B_32_train.pkl'
-    output_prefix = 'arabic_prefix_laion'
-    dataset = ClipGPTLaion5bArabicDataset(args.data, args.prefix_length, normalize_prefix=args.normalize_prefix)
+    prefix_length = args.prefix_length
+    dataset = ClipGPTFlickr8kDataset(args.data, prefix_length, normalize_prefix=args.normalize_prefix)
     prefix_dim = 640 if args.is_rn else 512
-    model = ClipCaptionPrefix(args.prefix_length, clip_length=args.prefix_length_clip, prefix_size=prefix_dim, num_layers=args.num_layers)
-    print("Train only prefix")
-    sys.stdout.flush()
+    args.mapping_type = {'mlp': MappingType.MLP, 'transformer': MappingType.Transformer}[args.mapping_type]
+    if args.only_prefix:
+        model = ClipCaptionPrefix(prefix_length, clip_length=args.prefix_length_clip, prefix_size=prefix_dim, num_layers=args.num_layers, mapping_type=args.mapping_type)
+        print("Train only prefix")
+    else:
+        model = ClipCaptionModel(prefix_length, clip_length=args.prefix_length_clip, prefix_size=prefix_dim, num_layers=args.num_layers, mapping_type=args.mapping_type)
+        print("Train both prefix and GPT")
+        sys.stdout.flush()
     train(dataset, model, args, output_dir=args.out_dir, output_prefix=output_prefix)
+
 
 if __name__ == '__main__':
     #read the arguments from the command line
-    # lang = sys.argv[1]
-    # main(lang)
-    main2()
+    output_prefix = sys.argv[1]
+    main(output_prefix)
