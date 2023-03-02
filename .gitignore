@@ -157,7 +157,7 @@ playground.ipynb
 data/
 checkpoints/
 data.zip
-*.ipynb
+# *.ipynb
 pretrained_models/
 laion/
 checkpoints.zip
