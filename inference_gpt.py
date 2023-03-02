@@ -78,7 +78,7 @@ def beam_search(model, tokenizer, embed, entry_length=67, top_p=0.8, temperature
     return generated_list[0]
 
 
-def generate_caption(image_path, model, clip_model, tokenizer ,prefix_length,  lang ,device):
+def generate_caption(image_path, model, preprocess, clip_model, tokenizer ,prefix_length,  lang ,device):
     
     image = io.imread(image_path)
     pil_image = PIL.Image.fromarray(image)
@@ -92,24 +92,19 @@ def generate_caption(image_path, model, clip_model, tokenizer ,prefix_length,  l
     plt.imshow(pil_image)
     plt.axis('off')
     if lang == 'arabic':
-        generated_text_prefix = fix_arabic_text(generated_text_prefix)
+        generated_text_prefix = generated_text_prefix#fix_arabic_text(generated_text_prefix)
     print(generated_text_prefix)
     plt.title(generated_text_prefix)
     plt.show()
 
 
-
-
-if __name__ == '__main__':
-    #Read the model path from the command line
-    model_path = sys.argv[1]
-
+def main(model_path):
     #Read the language from the model path
     if 'arabic' in model_path:
         lang = 'arabic'
     if 'english' in model_path:
         lang = 'english'
-
+    print(f'The Lang is {lang}')
     # Load the CLIP model
     device = 'cuda' if torch.cuda.is_available() else "cpu"
     clip_model, preprocess = clip.load("ViT-B/32", device=device, jit=False)
@@ -129,4 +124,10 @@ if __name__ == '__main__':
     sample_images_dir = './sample_image'
     sample_images_paths = [os.path.join(sample_images_dir, image_name) for image_name in os.listdir(sample_images_dir)]
     for image_path in sample_images_paths:
-        generate_caption(image_path, model, clip_model, tokenizer, prefix_length, lang, device)
+        generate_caption(image_path, model,preprocess, clip_model, tokenizer, prefix_length, lang, device)
+
+
+if __name__ == '__main__':
+    #Read the model path from the command line
+    model_path = sys.argv[1]
+    main(model_path)
