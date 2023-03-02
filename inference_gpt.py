@@ -18,7 +18,13 @@ def load_model(model_path):
     args_path = model_path.replace('.pt', '_args.pkl')
     with open(args_path, 'rb') as f:
         args = pickle.load(f)
-    model = ClipCaptionPrefix(args.prefix_length, args.lang , clip_length=args.prefix_length_clip, prefix_size=512, num_layers=args.num_layers, mapping_type=args.mapping_type)
+    model = ClipCaptionPrefix(
+        prefix_length=args.prefix_length,
+        lang = args.lang ,
+        clip_length=args.prefix_length_clip,
+        prefix_size=512,
+        num_layers=args.num_layers,
+        mapping_type=args.mapping_type)
     model.load_state_dict(torch.load(model_path, map_location='cpu'))
     return model , args.prefix_length
 
