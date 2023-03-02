@@ -45,7 +45,7 @@ class ClipGPTFlickr8kDataset(Dataset):
             self.caption2embedding = []
             max_seq_len = 0
             for caption in captions_raw:
-                self.captions_tokens.append(torch.tensor(self.tokenizer.encode(caption['caption'][np.random.randint(0, 3)]), dtype=torch.int64))
+                self.captions_tokens.append(torch.tensor(self.tokenizer.encode(caption['caption']), dtype=torch.int64))
                 self.caption2embedding.append(caption["clip_embedding"])
                 max_seq_len = max(max_seq_len, self.captions_tokens[-1].shape[0])
             with open(f"{data_path[:-4]}_tokens.pkl", 'wb') as f:
