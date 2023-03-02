@@ -12,65 +12,9 @@ from transformers import  AutoModelWithLMHead
 # model = AutoModelWithLMHead.from_pretrained("akhooli/gpt2-small-arabic")
 
 
-
-device =  torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-class DecoderRNN(nn.Module):
-    def __init__(self, embed_size, hidden_size, vocab_size, num_layers=1, device=device):
-        super( DecoderRNN , self).__init__()
-        self.embed_size = embed_size
-        self.hidden_size = hidden_size 
-        self.vocab_size = vocab_size
-        self.num_layers = num_layers
-        self.word_embedding = nn.Embedding( self.vocab_size , self.embed_size )
-        self.lstm  = nn.LSTM(    input_size  =  self.embed_size , 
-                             hidden_size = self.hidden_size,
-                             num_layers  = self.num_layers ,
-                             batch_first = True 
-                             )
-        self.fc = nn.Linear( self.hidden_size , self.vocab_size  )
-        self.device = device
-        
-
-    def init_hidden( self, batch_size ):
-      return ( torch.zeros( self.num_layers , batch_size , self.hidden_size  ).to(self.device),
-      torch.zeros( self.num_layers , batch_size , self.hidden_size  ).to(self.device) )
-    
-    def forward(self, features, captions):            
-      captions = captions[:,:-1]      
-      self.batch_size = features.shape[0]
-      self.hidden = self.init_hidden( self.batch_size )
-      embeds = self.word_embedding( captions )
-      inputs = torch.cat( ( features.unsqueeze(dim=1) , embeds ) , dim =1  )    
-      lstm_out , self.hidden = self.lstm(inputs , self.hidden)      
-      outputs = self.fc( lstm_out )       
-      return outputs
-
-    def Predict(self, inputs, max_len=20, end_token=1):        
-        final_output = []
-        batch_size = inputs.shape[0]         
-        hidden = self.init_hidden(batch_size) 
-    
-        while True:
-            lstm_out, hidden = self.lstm(inputs, hidden) 
-            outputs = self.fc(lstm_out)  
-            outputs = outputs.squeeze(1) 
-            _, max_idx = torch.max(outputs, dim=1) 
-            final_output.append(max_idx.cpu().numpy()[0].item())             
-            if (max_idx == end_token or len(final_output) >=max_len ):
-                break
-            
-            inputs = self.word_embedding(max_idx) 
-            inputs = inputs.unsqueeze(1)             
-        return final_output 
-
-
-
-
 class MappingType(Enum):
     MLP = 'mlp'
     Transformer = 'transformer'
-
 
 class MLP(nn.Module):
 
@@ -223,12 +167,18 @@ class ClipCaptionModel(nn.Module):
         out = self.gpt(inputs_embeds=embedding_cat, labels=labels, attention_mask=mask)
         return out
 
-    def __init__(self, prefix_length: int, clip_length: Optional[int] = None, prefix_size: int = 512,
+    def __init__(self, prefix_length: int, lang: str = 'english', clip_length: Optional[int] = None, prefix_size: int = 512,
                  num_layers: int = 8, mapping_type: MappingType = MappingType.MLP):
         super(ClipCaptionModel, self).__init__()
+
+        self.lang = lang
         self.prefix_length = prefix_length
-        # self.gpt = GPT2LMHeadModel.from_pretrained('gpt2')
-        self.gpt = AutoModelWithLMHead.from_pretrained("akhooli/gpt2-small-arabic")
+
+        if self.lang == 'english':
+            self.gpt = GPT2LMHeadModel.from_pretrained('gpt2')
+        elif self.lang == 'arabic':
+            self.gpt = AutoModelWithLMHead.from_pretrained("akhooli/gpt2-small-arabic")
+
         self.gpt_embedding_size = self.gpt.transformer.wte.weight.shape[1]
         if mapping_type == MappingType.MLP:
             self.clip_project = MLP((prefix_size, (self.gpt_embedding_size * prefix_length) // 2,

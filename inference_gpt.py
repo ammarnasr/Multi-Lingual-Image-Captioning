@@ -1,85 +1,81 @@
-import clip
 import os
-from torch import nn
-import numpy as np
-import torch
-import torch.nn.functional as nnf
 import sys
-from typing import Tuple, List, Union, Optional
-from transformers import GPT2Tokenizer, GPT2LMHeadModel, AdamW, get_linear_schedule_with_warmup
-from tqdm import tqdm, trange
+import clip
+import torch
+import pickle
+import PIL.Image 
 import skimage.io as io
-import PIL.Image
-from IPython.display import Image 
-from models import ClipCaptionModel, ClipCaptionPrefix
 import matplotlib.pyplot as plt
+import torch.nn.functional as nnf
 from plotting import fix_arabic_text
-from train_gpt import DemoArgs
-from transformers import AutoTokenizer, AutoModelWithLMHead
-
-N = type(None)
-V = np.array
-ARRAY = np.ndarray
-ARRAYS = Union[Tuple[ARRAY, ...], List[ARRAY]]
-VS = Union[Tuple[V, ...], List[V]]
-VN = Union[V, N]
-VNS = Union[VS, N]
-T = torch.Tensor
-TS = Union[Tuple[T, ...], List[T]]
-TN = Optional[T]
-TNS = Union[Tuple[TN, ...], List[TN]]
-TSN = Optional[TS]
-TA = Union[T, ARRAY]
+from models import  ClipCaptionPrefix
+from transformers import AutoTokenizer, GPT2Tokenizer
 
 
-def generate2(model, tokenizer, tokens=None, prompt=None, embed=None, entry_count=1, entry_length=67,
-              top_p=0.8, temperature=1., stop_token: str = '.'):
+
+def load_model(model_path):
+    '''load model from path'''
+    args_path = model_path.replace('.pt', '_args.pkl')
+    with open(args_path, 'rb') as f:
+        args = pickle.load(f)
+    model = ClipCaptionPrefix(args.prefix_length, args.lang , clip_length=args.prefix_length_clip, prefix_size=512, num_layers=args.num_layers, mapping_type=args.mapping_type)
+    model.load_state_dict(torch.load(model_path, map_location='cpu'))
+    return model , args.prefix_length
+
+
+def beam_search(model, tokenizer, embed, entry_length=67, top_p=0.8, temperature=1., stop_token= '.'):
+    '''Beam search for the GPT model.'''
+    
     model.eval()
-    generated_num = 0
     generated_list = []
     stop_token_index = tokenizer.encode(stop_token)[0]
     filter_value = -float("Inf")
-    device = next(model.parameters()).device
-
+    generated = embed
+    tokens = None
+    
     with torch.no_grad():
+        for i in range(entry_length):
+            
+            #  get the logits for the next token
+            outputs = model.gpt(inputs_embeds=generated)
+            logits = outputs.logits
+            logits = logits[:, -1, :] / (temperature if temperature > 0 else 1.0)
+            sorted_logits, sorted_indices = torch.sort(logits, descending=True)
+            cumulative_probs = torch.cumsum(nnf.softmax(sorted_logits, dim=-1), dim=-1)
+            sorted_indices_to_remove = cumulative_probs > top_p
+            sorted_indices_to_remove[..., 1:] = sorted_indices_to_remove[..., :-1].clone()
+            sorted_indices_to_remove[..., 0] = 0
+            indices_to_remove = sorted_indices[sorted_indices_to_remove]
+            logits[:, indices_to_remove] = filter_value
+            
+            #  take the most likely token and add it to the sequence
+            next_token = torch.argmax(logits, -1).unsqueeze(0)
 
-        for entry_idx in trange(entry_count):
-            if embed is not None:
-                generated = embed
 
-            for i in range(entry_length):
+            # transform the token to embedding
+            next_token_embed = model.gpt.transformer.wte(next_token)
 
-                outputs = model.gpt(inputs_embeds=generated)
-                logits = outputs.logits
-                logits = logits[:, -1, :] / (temperature if temperature > 0 else 1.0)
-                sorted_logits, sorted_indices = torch.sort(logits, descending=True)
-                cumulative_probs = torch.cumsum(nnf.softmax(sorted_logits, dim=-1), dim=-1)
-                sorted_indices_to_remove = cumulative_probs > top_p
-                sorted_indices_to_remove[..., 1:] = sorted_indices_to_remove[..., :-1].clone()
-                sorted_indices_to_remove[..., 0] = 0
-                indices_to_remove = sorted_indices[sorted_indices_to_remove]
-                logits[:, indices_to_remove] = filter_value
-                next_token = torch.argmax(logits, -1).unsqueeze(0)
-                next_token_embed = model.gpt.transformer.wte(next_token)
+            # add the token to the sequence
+            if tokens is None:
+                tokens = next_token
+            else:
+                tokens = torch.cat((tokens, next_token), dim=1)
+            
+            # add the embedding to the sequence
+            generated = torch.cat((generated, next_token_embed), dim=1)
 
-                if tokens is None:
-                    tokens = next_token
-                else:
-                    tokens = torch.cat((tokens, next_token), dim=1)
-                generated = torch.cat((generated, next_token_embed), dim=1)
-                if stop_token_index == next_token.item():
-                    break
-                if tokenizer.decode(tokens.squeeze().cpu().numpy())[-1] == '،':
-                    break
-                if tokenizer.decode(tokens.squeeze().cpu().numpy())[-1] == '.':
-                    break
+            # stop if the stop token is reached
+            if stop_token_index == next_token.item():
+                break
+            if stop_token == tokenizer.decode(tokens.squeeze().cpu().numpy())[-1]:
+                break
 
-            output_list = list(tokens.squeeze().cpu().numpy())
-            output_text = tokenizer.decode(output_list)
-            generated_list.append(output_text)
+        # convert the sequence to text
+        output_list = list(tokens.squeeze().cpu().numpy())
+        output_text = tokenizer.decode(output_list)
+        generated_list.append(output_text)
 
     return generated_list[0]
-
 
 
 def generate_caption(image_path, model, clip_model, tokenizer ,prefix_length,  lang ,device):
@@ -90,12 +86,12 @@ def generate_caption(image_path, model, clip_model, tokenizer ,prefix_length,  l
     with torch.no_grad():
         prefix = clip_model.encode_image(image).to(device, dtype=torch.float32)
         prefix_embed = model.clip_project(prefix).reshape(1, prefix_length, -1)
-        generated_text_prefix = generate2(model, tokenizer, embed=prefix_embed, entry_length=10)
+        generated_text_prefix = beam_search(model, tokenizer, embed=prefix_embed, entry_length=10)
 
     #display pil_image using plt
     plt.imshow(pil_image)
     plt.axis('off')
-    if lang == 'ar':
+    if lang == 'arabic':
         generated_text_prefix = fix_arabic_text(generated_text_prefix)
     print(generated_text_prefix)
     plt.title(generated_text_prefix)
@@ -105,28 +101,32 @@ def generate_caption(image_path, model, clip_model, tokenizer ,prefix_length,  l
 
 
 if __name__ == '__main__':
+    #Read the model path from the command line
     model_path = sys.argv[1]
-    lang = 'en'
-    if 'arabic' in model_path:
-        lang = 'ar'
-    device = 'cuda' if torch.cuda.is_available() else "cpu"
-    prefix_length = 10
 
+    #Read the language from the model path
+    if 'arabic' in model_path:
+        lang = 'arabic'
+    if 'english' in model_path:
+        lang = 'english'
+
+    # Load the CLIP model
+    device = 'cuda' if torch.cuda.is_available() else "cpu"
     clip_model, preprocess = clip.load("ViT-B/32", device=device, jit=False)
-    if lang == 'ar':
+    
+    # Load the GPT model Tokenizer
+    if lang == 'arabic':
         tokenizer = AutoTokenizer.from_pretrained("akhooli/gpt2-small-arabic")
-    else:
+    if lang == 'english':
         tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 
-
-    args = DemoArgs()
-    model = ClipCaptionPrefix(prefix_length, clip_length=args.prefix_length_clip, prefix_size=512, num_layers=args.num_layers, mapping_type=args.mapping_type)
-    # model = ClipCaptionModel(prefix_length)
-    model.load_state_dict(torch.load(model_path, map_location='cpu'))
+    # Load the GPT model
+    model, prefix_length = load_model(model_path)
     model.eval()
     model = model.to(device)
-    sample_images_dir = './sample_image'
 
+
+    sample_images_dir = './sample_image'
     sample_images_paths = [os.path.join(sample_images_dir, image_name) for image_name in os.listdir(sample_images_dir)]
     for image_path in sample_images_paths:
         generate_caption(image_path, model, clip_model, tokenizer, prefix_length, lang, device)

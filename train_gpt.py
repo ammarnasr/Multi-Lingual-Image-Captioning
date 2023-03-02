@@ -6,30 +6,23 @@ from tqdm import tqdm
 import os
 import sys
 import argparse
+import pickle
 import json
 from typing import  Union
 from dataset import ClipGPTFlickr8kDataset
 from models import ClipCaptionModel, ClipCaptionPrefix, MappingType
+from args import DemoArgs
 
-def load_model(config_path: str, epoch_or_latest: Union[str, int] = '_latest'):
-    with open(config_path) as f:
-        config = json.load(f)
-    parser = argparse.ArgumentParser()
-    parser.set_defaults(**config)
-    args = parser.parse_args()
-    if type(epoch_or_latest) is int:
-        epoch_or_latest = f"-{epoch_or_latest:03d}"
-    model_path = os.path.join(args.out_dir, f"{args.prefix}{epoch_or_latest}.pt")
-    if args.only_prefix:
-        model = ClipCaptionPrefix(args.prefix_length)
-    else:
-        model = ClipCaptionModel(args.prefix_length)
-    if os.path.isfile(model_path):
-        print(f"loading model from {model_path}")
-        model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
-    else:
-        print(f"{model_path} is not exist")
-    return model, parser
+
+def load_model(model_path):
+    '''load model from path'''
+    epoch_number = model_path.split('-')[-1].split('.')[0]
+    args_path = model_path.replace('.pt', '_args.pkl')
+    with open(args_path, 'rb') as f:
+        args = pickle.load(f)
+    model = ClipCaptionPrefix(args.prefix_length, args.lang , clip_length=args.prefix_length_clip, prefix_size=512, num_layers=args.num_layers, mapping_type=args.mapping_type)
+    model.load_state_dict(torch.load(model_path, map_location='cpu'))
+    return model , args, epoch_number
 
 
 def train(dataset: ClipGPTFlickr8kDataset, model: ClipCaptionModel, args,
@@ -71,51 +64,26 @@ def train(dataset: ClipGPTFlickr8kDataset, model: ClipCaptionModel, args,
                 )
         progress.close()
         if epoch % args.save_every == 0 or epoch == epochs - 1:
-            torch.save(
-                model.state_dict(),
-                os.path.join(output_dir, f"{output_prefix}-{epoch:03d}.pt"),
-            )
+            model_path = os.path.join(output_dir, f"{output_prefix}-{epoch:03d}.pt")
+            args_path = model_path.replace('.pt', '_args.pkl')
+            torch.save(model.state_dict(), model_path)
+            with open(args_path, 'wb') as f:
+                pickle.dump(args, f)
     return model
 
 
 
-#create a class called demo args to store the arguments
-class DemoArgs:
-    def __init__(self):
-        self.data = 'data/oscar_split_ViT-B_32_train_arabic.pkl'
-        self.out_dir = './checkpoints'
-        self.prefix = 'coco_prefix'
-        self.epochs = 30
-        self.save_every = 1
-        self.prefix_length = 10
-        self.prefix_length_clip = 10
-        self.bs = 40
-        self.only_prefix = True
-        self.mapping_type = 'transformer'
-        self.num_layers = 8
-        self.is_rn = False
-        self.normalize_prefix = False
 
 
 
-
-def main(output_prefix):
+def main():
     args = DemoArgs()
-    prefix_length = args.prefix_length
-    dataset = ClipGPTFlickr8kDataset(args.data, prefix_length, normalize_prefix=args.normalize_prefix)
+    dataset = ClipGPTFlickr8kDataset(args.data, args.prefix_length,lang= args.lang, normalize_prefix=args.normalize_prefix)
     prefix_dim = 640 if args.is_rn else 512
     args.mapping_type = {'mlp': MappingType.MLP, 'transformer': MappingType.Transformer}[args.mapping_type]
-    if args.only_prefix:
-        model = ClipCaptionPrefix(prefix_length, clip_length=args.prefix_length_clip, prefix_size=prefix_dim, num_layers=args.num_layers, mapping_type=args.mapping_type)
-        print("Train only prefix")
-    else:
-        model = ClipCaptionModel(prefix_length, clip_length=args.prefix_length_clip, prefix_size=prefix_dim, num_layers=args.num_layers, mapping_type=args.mapping_type)
-        print("Train both prefix and GPT")
-        sys.stdout.flush()
-    train(dataset, model, args, output_dir=args.out_dir, output_prefix=output_prefix)
+    model = ClipCaptionPrefix(args.prefix_length, lang=args.lang , clip_length=args.prefix_length_clip, prefix_size=prefix_dim, num_layers=args.num_layers, mapping_type=args.mapping_type)
+    train(dataset, model, args, output_dir=args.out_dir, output_prefix=args.output_prefix)
 
 
 if __name__ == '__main__':
-    #read the arguments from the command line
-    output_prefix = sys.argv[1]
-    main(output_prefix)
+    main()

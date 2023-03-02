@@ -86,12 +86,11 @@ def create_CLIP_embeddings_for_images(lang, clip_model_type='ViT-B/32', device='
     Create the CLIP embeddings for the images and save them to a pickle file
     '''
     # create the output path
-    clip_model_name = clip_model_type.replace('/', '-') # convert ViT-B/32 to ViT-B-32 to be used in the file name
-    out_path = f"./data/embeddings/{lang}_CLIP-{clip_model_name}_embeddings.pkl" # path to save the embeddings
+    clip_model_name = clip_model_type.replace('/', '-') 
+    out_path = f"./data/embeddings/{lang}_CLIP-{clip_model_name}_embeddings.pkl" 
 
     # load the CLIP model
-    clip_model, preprocess = clip.load(clip_model_type, device=device, jit=False)# load the CLIP model
-    clip_model.eval()
+    clip_model, preprocess = clip.load(clip_model_type, device=device, jit=False)
 
     # load the annotations
     annotations_file = f"./data/annotations/{lang}_captions.json"
@@ -110,7 +109,8 @@ def create_CLIP_embeddings_for_images(lang, clip_model_type='ViT-B/32', device='
 
         # preprocess the image and encode it with the CLIP model
         image = preprocess(Image.fromarray(image)).unsqueeze(0).to(device)
-        prefix = clip_model.encode_image(image).cpu()
+        with torch.no_grad():
+            prefix = clip_model.encode_image(image).cpu()
 
         # add the index , embedding and caption to the dictionary
         d["clip_embedding"] = i 
