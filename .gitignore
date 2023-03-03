@@ -161,3 +161,4 @@ data.zip
 pretrained_models/
 laion/
 checkpoints.zip
+checkpoints_archive/

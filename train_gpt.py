@@ -16,7 +16,7 @@ from args import DemoArgs
 
 def load_model(model_path):
     '''load model from path'''
-    epoch_number = model_path.split('-')[-1].split('.')[0]
+    epoch_number = int(model_path.split('-')[-1].split('.')[0]) + 1
     args_path = model_path.replace('.pt', '_args.pkl')
     with open(args_path, 'rb') as f:
         args = pickle.load(f)
@@ -26,7 +26,7 @@ def load_model(model_path):
 
 
 def train(dataset: ClipGPTFlickr8kDataset, model: ClipCaptionModel, args,
-          lr: float = 2e-5, warmup_steps: int = 5000, output_dir: str = ".", output_prefix: str = ""):
+          lr: float = 2e-5, warmup_steps: int = 5000, output_dir: str = ".", output_prefix: str = "", start_epoch = 0):
 
     device = torch.device('cuda:0')
     batch_size = args.bs
@@ -41,8 +41,8 @@ def train(dataset: ClipGPTFlickr8kDataset, model: ClipCaptionModel, args,
         optimizer, num_warmup_steps=warmup_steps, num_training_steps=epochs * len(train_dataloader)
     )
     # save_config(args)
-    for epoch in range(epochs):
-        print(f">>> Training epoch {epoch}")
+    for epoch in range(start_epoch, epochs+start_epoch):
+        print(f">>> Training epoch {epoch} out of {epochs+start_epoch}")
         sys.stdout.flush()
         progress = tqdm(total=len(train_dataloader), desc=output_prefix)
         for idx, (tokens, mask, prefix) in enumerate(train_dataloader):
@@ -76,14 +76,29 @@ def train(dataset: ClipGPTFlickr8kDataset, model: ClipCaptionModel, args,
 
 
 
-def main():
-    args = DemoArgs()
+def main(model_path = None):
+        
+
+    if model_path is None:
+        args = DemoArgs()
+        start_epoch = 0
+        prefix_dim = 640 if args.is_rn else 512
+        args.mapping_type = {'mlp': MappingType.MLP, 'transformer': MappingType.Transformer}[args.mapping_type]
+        model = ClipCaptionPrefix(args.prefix_length, lang=args.lang , clip_length=args.prefix_length_clip, prefix_size=prefix_dim, num_layers=args.num_layers, mapping_type=args.mapping_type)
+    else:
+        model, args, start_epoch = load_model(model_path)
+        prefix_dim = 640 if args.is_rn else 512
+    
     dataset = ClipGPTFlickr8kDataset(args.data, args.prefix_length,lang= args.lang, normalize_prefix=args.normalize_prefix)
-    prefix_dim = 640 if args.is_rn else 512
-    args.mapping_type = {'mlp': MappingType.MLP, 'transformer': MappingType.Transformer}[args.mapping_type]
-    model = ClipCaptionPrefix(args.prefix_length, lang=args.lang , clip_length=args.prefix_length_clip, prefix_size=prefix_dim, num_layers=args.num_layers, mapping_type=args.mapping_type)
-    train(dataset, model, args, output_dir=args.out_dir, output_prefix=args.output_prefix)
+    train(dataset, model, args, output_dir=args.out_dir, output_prefix=args.output_prefix, start_epoch = start_epoch)
 
 
 if __name__ == '__main__':
-    main()
+    # check if checkpoint is given as argument
+    if len(sys.argv) > 1:
+        print("Loading model from checkpoint")
+        model_path = sys.argv[1]
+        main(model_path)
+    else:
+        print('Training from scratch')
+        main()

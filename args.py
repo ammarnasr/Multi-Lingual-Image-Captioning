@@ -10,9 +10,10 @@ class DemoArgs:
         self.save_every = 3
         self.prefix_length = 10
         self.prefix_length_clip = 10
-        self.bs = 10
+        self.bs = 40
         self.only_prefix = True
         self.mapping_type = 'transformer'
         self.num_layers = 8
         self.is_rn = False
         self.normalize_prefix = False
+
