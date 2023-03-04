@@ -12,6 +12,7 @@ from typing import  Union
 from dataset import ClipGPTFlickr8kDataset
 from models import ClipCaptionModel, ClipCaptionPrefix, MappingType
 from args import DemoArgs
+from bleu import belu_score
 
 
 def load_model(model_path):
@@ -69,6 +70,11 @@ def train(dataset: ClipGPTFlickr8kDataset, model: ClipCaptionModel, args,
             torch.save(model.state_dict(), model_path)
             with open(args_path, 'wb') as f:
                 pickle.dump(args, f)
+
+            if args.get_bleu:
+                print('Evaluating model on BLEU score')
+                belu_score(model_path)
+                print('Done')
     return model
 
 

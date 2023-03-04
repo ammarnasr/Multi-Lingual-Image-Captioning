@@ -16,4 +16,5 @@ class DemoArgs:
         self.num_layers = 8
         self.is_rn = False
         self.normalize_prefix = False
+        self.get_bleu = False
 
