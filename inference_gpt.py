@@ -29,7 +29,7 @@ def load_model(model_path):
     return model , args.prefix_length
 
 
-def beam_search(model, tokenizer, embed, entry_length=67, top_p=0.8, temperature=1., stop_token= '.'):
+def beam_search(model, tokenizer, embed, entry_length=20, top_p=0.8, temperature=1., stop_token= '.'):
     '''Beam search for the GPT model.'''
     
     model.eval()
