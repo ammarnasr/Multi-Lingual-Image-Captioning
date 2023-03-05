@@ -37,7 +37,7 @@ def train(dataset: ClipGPTFlickr8kDataset, model: ClipCaptionModel, args,
     model = model.to(device)
     model.train()
     optimizer = AdamW(model.parameters(), lr=lr)
-    train_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, drop_last=True)
+    train_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=4)
     scheduler = get_linear_schedule_with_warmup(
         optimizer, num_warmup_steps=warmup_steps, num_training_steps=epochs * len(train_dataloader)
     )
@@ -59,10 +59,7 @@ def train(dataset: ClipGPTFlickr8kDataset, model: ClipCaptionModel, args,
             progress.set_postfix({"loss": loss.item()})
             progress.update()
             if (idx + 1) % 10000 == 0:
-                torch.save(
-                    model.state_dict(),
-                    os.path.join(output_dir, f"{output_prefix}_latest.pt"),
-                )
+                torch.save(model.state_dict(),os.path.join(output_dir, f"{output_prefix}_latest.pt"),)
         progress.close()
         if epoch % args.save_every == 0 or epoch == epochs - 1:
             model_path = os.path.join(output_dir, f"{output_prefix}-{epoch:03d}.pt")

@@ -13,7 +13,7 @@ from transformers import AutoTokenizer, GPT2Tokenizer
 
 class ClipGPTFlickr8kDataset(Dataset):
    
-    def __init__(self, data_path,  prefix_length, lang='english' , normalize_prefix=False):
+    def __init__(self, data_path,  prefix_length, lang , normalize_prefix=False):
         self.lang = lang
         self.prefix_length = prefix_length
         self.normalize_prefix = normalize_prefix
