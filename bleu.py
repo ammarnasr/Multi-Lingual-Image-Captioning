@@ -32,7 +32,7 @@ def prepare_data_for_bleu(file_path, n=100):
     return captions_per_image, sample_images_paths
 
 
-def generate_caption(image_path, model, preprocess, clip_model, tokenizer ,prefix_length,  lang ,device):
+def generate_caption(image_path, model, preprocess, clip_model, tokenizer ,prefix_length ,device):
     image = io.imread(image_path)
     pil_image = PIL.Image.fromarray(image)
     image = preprocess(pil_image).unsqueeze(0).to(device)
@@ -73,7 +73,7 @@ def belu_score(model_path):
     references = []
     for i in tqdm(range(len(sample_images_paths))):
         image_path = sample_images_paths[i]
-        prediction = generate_caption(image_path, model,preprocess, clip_model, tokenizer, prefix_length, lang, device)
+        prediction = generate_caption(image_path, model,preprocess, clip_model, tokenizer, prefix_length, device)
         candidates.append(prediction.split(' '))
         references.append([r.split(' ') for r in sample_image_captions[i]])
 

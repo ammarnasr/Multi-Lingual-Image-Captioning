@@ -13,7 +13,7 @@ from dataset import ClipGPTFlickr8kDataset
 from models import ClipCaptionModel, ClipCaptionPrefix, MappingType
 from args import DemoArgs
 from bleu import belu_score
-
+import torch
 
 def load_model(model_path):
     '''load model from path'''
