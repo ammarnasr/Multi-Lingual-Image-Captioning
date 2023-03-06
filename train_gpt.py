@@ -61,7 +61,7 @@ def train(dataset: ClipGPTFlickr8kDataset, model: ClipCaptionModel, args,
             if (idx + 1) % 10000 == 0:
                 torch.save(model.state_dict(),os.path.join(output_dir, f"{output_prefix}_latest.pt"),)
         progress.close()
-        if epoch % args.save_every == 0 or epoch == epochs - 1:
+        if epoch % args.save_every == 0 or epoch == epochs - 1 + start_epoch:
             model_path = os.path.join(output_dir, f"{output_prefix}-{epoch:03d}.pt")
             args_path = model_path.replace('.pt', '_args.pkl')
             torch.save(model.state_dict(), model_path)
