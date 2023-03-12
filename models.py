@@ -8,8 +8,7 @@ from torch.nn import functional as nnf
 from typing import Tuple, Optional
 from enum import Enum
 
-from transformers import  AutoModelWithLMHead
-# model = AutoModelWithLMHead.from_pretrained("akhooli/gpt2-small-arabic")
+from transformers import  AutoModelWithLMHead, AutoModelForCausalLM
 
 
 class MappingType(Enum):
@@ -176,8 +175,10 @@ class ClipCaptionModel(nn.Module):
 
         if self.lang == 'english':
             self.gpt = GPT2LMHeadModel.from_pretrained('gpt2')
+        # elif self.lang == 'arabic':
+        #     self.gpt = AutoModelWithLMHead.from_pretrained("akhooli/gpt2-small-arabic")
         elif self.lang == 'arabic':
-            self.gpt = AutoModelWithLMHead.from_pretrained("akhooli/gpt2-small-arabic")
+            self.gpt = AutoModelForCausalLM.from_pretrained("elgeish/gpt2-medium-arabic-poetry")
 
         self.gpt_embedding_size = self.gpt.transformer.wte.weight.shape[1]
         if mapping_type == MappingType.MLP:
