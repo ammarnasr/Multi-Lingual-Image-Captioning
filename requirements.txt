@@ -1,0 +1,9 @@
+transformers
+multilingual-clip
+ftfy
+regex
+tqdm
+git+https://github.com/openai/CLIP.git
+pandas
+arabic-reshaper
+python-bidi

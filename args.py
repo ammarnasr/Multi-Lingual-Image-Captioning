@@ -8,8 +8,8 @@ class DemoArgs:
         self.output_prefix = 'arabic_exp_3'
         self.epochs = 1
         self.save_every = 1
-        self.prefix_length = 10
-        self.prefix_length_clip = 10
+        self.prefix_length = 11
+        self.prefix_length_clip = 9
         self.bs = 2
         self.only_prefix = True
         self.mapping_type = 'transformer'
