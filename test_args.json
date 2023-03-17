@@ -1,0 +1,16 @@
+{
+  "data": "data/embeddings/arabic_CLIP-ViT-B-32_embeddings.pkl",
+  "out_dir": "checkpoint_2",
+  "model_name": "arabic_flicker8k_Meduim",
+  "prefix_length": 10,
+  "clip_length": 10,
+  "prefix_size": 512,
+  "batch_size": 32,
+  "epochs": 10,
+  "save_every": 1,
+  "lang": "arabic",
+  "normalize_prefix": true,
+  "num_layers": 1,
+  "mapping_type": "linear",
+  "checkpoint": null
+}
