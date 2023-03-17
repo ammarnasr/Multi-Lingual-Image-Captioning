@@ -21,7 +21,7 @@ def load_model(model_path, args):
 
     #load args from json file
     args_path = model_path.replace('.pt', '_args.json')
-    
+
     # check if the args_path exists
     if os.path.exists(args_path):
         with open(args_path, 'r') as f:
@@ -93,7 +93,7 @@ def main(args):
         start_epoch = 0
         model = ClipCaptionPrefix(args.prefix_length, lang=args.lang, clip_length=args.clip_length, prefix_size=args.prefix_size, num_layers=args.num_layers)
     else:
-        model, args, start_epoch = load_model(model_path)
+        model, args, start_epoch = load_model(model_path, args)
     
     dataset = ClipGPTFlickr8kDataset(args.data, args.prefix_length,lang= args.lang, normalize_prefix=args.normalize_prefix)
     train(dataset, model, args, start_epoch = start_epoch)
@@ -105,7 +105,7 @@ if __name__ == '__main__':
 
     # add arguments to the parser
     parser.add_argument('--data',             type=str, default='data/embeddings/arabic_CLIP-ViT-B-32_embeddings.pkl', help='path to dataset Images Embeddings')
-    parser.add_argument('--out_dir',          type=str, default='checkpoint', help='path to save the model')
+    parser.add_argument('--output_dir',          type=str, default='checkpoint', help='path to save the model')
     parser.add_argument('--model_name',       type=str, default='arabic_flicker8k_Meduim', help='name of the model')
     parser.add_argument('--prefix_length',    type=int, default=10, help='The Number of prefix tokens to which the CLIP features will be mapped')
     parser.add_argument('--clip_length',      type=int, default=10, help='The Number of CLIP Visual features')
