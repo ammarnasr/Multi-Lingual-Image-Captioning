@@ -15,19 +15,13 @@ echo "====================Dataset (Flickr8k Dataset Arabic-English) is downloade
 
 #Change Directory to the Repo
 cd ./Multi-Lingual-Image-Captioning
-gdown --id 1_uX98Y_ykKO_s2d0l-lUPgdhUrlsrRyj
-unzip -qq ./checkpoints.zip -d ./
-rm ./checkpoints.zip
-echo "====================Checkpoints are downloaded: ===================="
-ls ./checkpoints
-
-#Print The Current Directory
 echo "====================Current Directory: ===================="
 pwd
 
-
-#Run The Training
-output_dir=./output_dir_1
-python train.py --output_dir=$output_dir 
-
+# #Download and Extract The Checkpoints
+# gdown --id 1_uX98Y_ykKO_s2d0l-lUPgdhUrlsrRyj
+# unzip -qq ./checkpoints.zip -d ./
+# rm ./checkpoints.zip
+# echo "====================Checkpoints are downloaded: ===================="
+# ls ./checkpoints
 
