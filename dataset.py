@@ -9,8 +9,6 @@ from transformers import AutoTokenizer, GPT2Tokenizer
 
 
 
-
-
 class ClipGPTFlickr8kDataset(Dataset):
    
     def __init__(self, data_path,  prefix_length, lang , normalize_prefix=False):

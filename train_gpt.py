@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 import json
 import torch
 import pickle
@@ -10,6 +11,7 @@ from torch.nn import functional as nnf
 from torch.utils.data import  DataLoader
 from dataset import ClipGPTFlickr8kDataset
 from transformers import  AdamW, get_linear_schedule_with_warmup
+from bleu import BLEU
 
 def load_model(args):
     '''
@@ -21,8 +23,8 @@ def load_model(args):
     #load args from json file
     model_path = args.checkpoint
     epoch_number = int(model_path.split('-')[-1].split('.')[0])
-    args_path = model_path.replace('.pt', '_args.json')
-
+    #create the args path from the model path by replacing the extension and adding _args.json and remove the epoch number
+    args_path = model_path.replace('.pt', '_args.json').replace(f'-{epoch_number:03d}', '')
     # check if the args_path exists
     if os.path.exists(args_path):
         with open(args_path, 'r') as f:
@@ -34,7 +36,7 @@ def load_model(args):
         with open(args_path, 'rb') as f:
             args = pickle.load(f)
 
-    model = ClipCaptionPrefix(args.prefix_length, args.lang , clip_length=args.prefix_length_clip, prefix_size=512, num_layers=args.num_layers, mapping_type=args.mapping_type)
+    model = ClipCaptionPrefix(args.prefix_length, lang=args.lang, clip_length=args.clip_length, prefix_size=args.prefix_size, num_layers=args.num_layers)
     model.load_state_dict(torch.load(model_path, map_location='cpu'))
     return model , args, epoch_number
 
@@ -60,11 +62,18 @@ def train(dataset, model, args , start_epoch = 0):
     train_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, drop_last=True, num_workers=2, sampler=sampler)
     scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=warmup_steps, num_training_steps=epochs * len(train_dataloader))
 
+    # Create one Dictionary to track: loss per batch, loss per epoch, time per epoch and time per batch and the BLEU score per epoch
+    tracker = {'loss_per_batch': [], 'loss_per_epoch': [], 'time_per_epoch': [], 'time_per_batch': [], 'bleu_per_epoch': []}
+
     for epoch in range(start_epoch, epochs+start_epoch):
         print(f">>> Training epoch {epoch} out of {epochs+start_epoch}")
         sys.stdout.flush()
         progress = tqdm(total=len(train_dataloader), desc=model_name)
+        # start the epoch timer
+        epoch_start = time.time()
         for idx, (tokens, mask, prefix) in enumerate(train_dataloader):
+            # start the batch timer
+            batch_start = time.time()
             model.zero_grad()
             tokens, mask, prefix = tokens.to(device), mask.to(device), prefix.to(device, dtype=torch.float32)
             outputs = model(tokens, prefix, mask)
@@ -78,15 +87,37 @@ def train(dataset, model, args , start_epoch = 0):
             progress.update()
             if (idx + 1) % 100 == 0:
                 torch.save(model.state_dict(),os.path.join(output_dir, f"{model_name}_latest.pt"),)
+            # end the batch timer
+            batch_end = time.time()
+            # append the batch time to the tracker
+            tracker['time_per_batch'].append(batch_end - batch_start)
+            # append the batch loss to the tracker
+            tracker['loss_per_batch'].append(loss.item())
         progress.close()
         if epoch % args.save_every == 0 or epoch == epochs - 1 + start_epoch:
             model_path = os.path.join(output_dir, f"{model_name}-{epoch:03d}.pt")
             torch.save(model.state_dict(), model_path)
+        
+        
+        # end the epoch timer
+        epoch_end = time.time()
+        # append the epoch time to the tracker
+        tracker['time_per_epoch'].append(epoch_end - epoch_start)
+        # append the epoch loss to the tracker
+        tracker['loss_per_epoch'].append(loss.item())
+        # # calculate the bleu score 
+        model_path = os.path.join(output_dir, f"{model_name}-{epoch:03d}.pt")
+        #create the args path from the model path by replacing the extension and adding _args.json and remove the epoch number
+        args_path = model_path.replace('.pt', '_args.json').replace(f'-{epoch:03d}', '')
+        bleu_obj = BLEU(args_path, model_path)
+        bleu = bleu_obj.calculate_bleu()
+        # append the bleu score to the tracker
+        tracker['bleu_per_epoch'].append(bleu)
+        # save the tracker to a pickle file
+        tracker_path = os.path.join(output_dir, f"{model_name}_tracker.pkl")
+        with open(tracker_path, 'wb') as f:
+            pickle.dump(tracker, f)
     return model
-
-
-
-
 
 
 def main(args):
@@ -133,13 +164,16 @@ if __name__ == '__main__':
     for arg in vars(args):
         print(arg,':\t',  getattr(args, arg))
 
-    args_path = os.path.join(args.output_dir, f"{args.model_name}_args.json")
-    with open(args_path, 'w') as f:
-        json.dump(args.__dict__, f)
+    if args.checkpoint is not None:
+        main(args)
+    
+    else:
+        args_path = os.path.join(args.output_dir, f"{args.model_name}_args.json")
+        with open(args_path, 'w') as f:
+            json.dump(args.__dict__, f)
+        print(f'Arguments saved to {args_path}')
 
-    print(f'Arguments saved to {args_path}')
-
-    print('+----------------------------------------------------------------------------------------------------------+')
-    print('+----------------------------------------------------------------------------------------------------------+')
-    print('Starting training..')
-    main(args)
+        print('+----------------------------------------------------------------------------------------------------------+')
+        print('+----------------------------------------------------------------------------------------------------------+')
+        print('Starting training..')
+        main(args)

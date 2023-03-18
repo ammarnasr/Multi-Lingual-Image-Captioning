@@ -162,3 +162,5 @@ pretrained_models/
 laion/
 checkpoints.zip
 checkpoints_archive/
+eval_data/images
+eval_data/captions
