@@ -25,3 +25,19 @@ rm ./checkpoints.zip
 echo "====================Checkpoints are downloaded: ===================="
 ls ./checkpoints
 
+
+#change directory to the evaluation folder
+cd ./eval_data
+echo "====================Current Directory: ===================="
+pwd
+
+#Download and Extract The Evaluation Data
+gdown --id 1vUXZiGKdkfSHJVd3uP0WEJAu6AFv5uHC
+gdown --id 1cRHoYlvJusRoccu5tVuZZT-neBLdF4TV
+unzip -qq ./images.zip -d ./
+rm ./images.zip
+unzip -qq ./captions.zip -d ./
+rm ./captions.zip
+echo "====================Evaluation Data is downloaded: ===================="
+
+

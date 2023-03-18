@@ -163,4 +163,6 @@ laion/
 checkpoints.zip
 checkpoints_archive/
 eval_data/images
+eval_data/images.zip
 eval_data/captions
+eval_data/captions.zip
