@@ -11,15 +11,16 @@ from torch.utils.data import  DataLoader
 from dataset import ClipGPTFlickr8kDataset
 from transformers import  AdamW, get_linear_schedule_with_warmup
 
-def load_model(model_path, args):
+def load_model(args):
     '''
     Load the model from the checkpoint
     :param model_path: path to the model checkpoint
     :return: the model, the arguments and the epoch number
     '''
-    epoch_number = int(model_path.split('-')[-1].split('.')[0]) + 1
 
     #load args from json file
+    model_path = args.checkpoint
+    epoch_number = int(model_path.split('-')[-1].split('.')[0])
     args_path = model_path.replace('.pt', '_args.json')
 
     # check if the args_path exists
@@ -53,10 +54,10 @@ def train(dataset, model, args , start_epoch = 0):
     model = model.to(device)
     model.train()
     optimizer = AdamW(model.parameters(), lr=lr)
-    # train_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=2)
     #adjust the dataloader to the percentage of the dataset
-    if precentage < 1:
-        train_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=2, sampler=torch.utils.data.SubsetRandomSampler(range(int(len(dataset)*precentage))))
+    rand_inds = torch.randperm(len(dataset))[:int(len(dataset) * precentage)]
+    sampler = torch.utils.data.SubsetRandomSampler(rand_inds)
+    train_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, drop_last=True, num_workers=2, sampler=sampler)
     scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=warmup_steps, num_training_steps=epochs * len(train_dataloader))
 
     for epoch in range(start_epoch, epochs+start_epoch):
@@ -80,10 +81,7 @@ def train(dataset, model, args , start_epoch = 0):
         progress.close()
         if epoch % args.save_every == 0 or epoch == epochs - 1 + start_epoch:
             model_path = os.path.join(output_dir, f"{model_name}-{epoch:03d}.pt")
-            args_path = model_path.replace('.pt', '_args.json')
             torch.save(model.state_dict(), model_path)
-            with open(args_path, 'wb') as f:
-                json.dump(args.__dict__, f)
     return model
 
 
@@ -92,12 +90,12 @@ def train(dataset, model, args , start_epoch = 0):
 
 
 def main(args):
-    model_path = args.checkpoint
-    if model_path is None:
+    ck = args.checkpoint
+    if ck is None:
         start_epoch = 0
         model = ClipCaptionPrefix(args.prefix_length, lang=args.lang, clip_length=args.clip_length, prefix_size=args.prefix_size, num_layers=args.num_layers)
     else:
-        model, args, start_epoch = load_model(model_path, args)
+        model, args, start_epoch = load_model(args)
     
     dataset = ClipGPTFlickr8kDataset(args.data, args.prefix_length,lang= args.lang, normalize_prefix=args.normalize_prefix)
     train(dataset, model, args, start_epoch = start_epoch)
@@ -135,8 +133,13 @@ if __name__ == '__main__':
     for arg in vars(args):
         print(arg,':\t',  getattr(args, arg))
 
-    # save the arguments to a pickle file
-    with open("test_args.pkl", 'wb') as f:
-        pickle.dump(args, f)
-    # return
-    # main(args)
+    args_path = os.path.join(args.output_dir, f"{args.model_name}_args.json")
+    with open(args_path, 'w') as f:
+        json.dump(args.__dict__, f)
+
+    print(f'Arguments saved to {args_path}')
+
+    print('+----------------------------------------------------------------------------------------------------------+')
+    print('+----------------------------------------------------------------------------------------------------------+')
+    print('Starting training..')
+    main(args)
