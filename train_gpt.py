@@ -46,13 +46,17 @@ def train(dataset, model, args , start_epoch = 0):
     warmup_steps = args.warmup_steps
     output_dir = args.output_dir
     model_name = args.model_name
+    precentage = args.percentage
 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     model = model.to(device)
     model.train()
     optimizer = AdamW(model.parameters(), lr=lr)
-    train_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=2)
+    # train_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=2)
+    #adjust the dataloader to the percentage of the dataset
+    if precentage < 1:
+        train_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=2, sampler=torch.utils.data.SubsetRandomSampler(range(int(len(dataset)*precentage))))
     scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=warmup_steps, num_training_steps=epochs * len(train_dataloader))
 
     for epoch in range(start_epoch, epochs+start_epoch):
@@ -120,8 +124,8 @@ if __name__ == '__main__':
     parser.add_argument('--checkpoint',       type=str, default=None, help='The path to the checkpoint to load the model from')
     parser.add_argument('--lr',               type=float, default=0.01, help='The learning rate')
     parser.add_argument('--warmup_steps',     type=int, default=1000, help='The number of warmup steps')
-
-     
+    #add argumnet for the precentage of the dataset to use
+    parser.add_argument('--percentage',       type=float, default=1, help='The percentage of the dataset to use')
     
     # parse the arguments
     args = parser.parse_args()
