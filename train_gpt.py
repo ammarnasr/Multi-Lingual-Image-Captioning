@@ -109,7 +109,7 @@ def train(dataset, model, args , start_epoch = 0):
         model_path = os.path.join(output_dir, f"{model_name}-{epoch:03d}.pt")
         #create the args path from the model path by replacing the extension and adding _args.json and remove the epoch number
         args_path = model_path.replace('.pt', '_args.json').replace(f'-{epoch:03d}', '')
-        bleu_obj = BLEU(args_path, model_path)
+        bleu_obj = BLEU(args_path, model_path, model=model)
         bleu = bleu_obj.calculate_bleu()
         # append the bleu score to the tracker
         tracker['bleu_per_epoch'].append(bleu)
@@ -138,7 +138,7 @@ if __name__ == '__main__':
 
     # add arguments to the parser
     parser.add_argument('--data',             type=str, default='data/embeddings/arabic_CLIP-ViT-B-32_embeddings.pkl', help='path to dataset Images Embeddings')
-    parser.add_argument('--output_dir',          type=str, default='checkpoint', help='path to save the model')
+    parser.add_argument('--output_dir',       type=str, default='checkpoint', help='path to save the model')
     parser.add_argument('--model_name',       type=str, default='arabic_flicker8k_Meduim', help='name of the model')
     parser.add_argument('--prefix_length',    type=int, default=10, help='The Number of prefix tokens to which the CLIP features will be mapped')
     parser.add_argument('--clip_length',      type=int, default=10, help='The Number of CLIP Visual features')

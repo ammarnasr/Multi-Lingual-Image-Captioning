@@ -16,7 +16,7 @@ from models import ClipCaptionPrefix
 
 #Create a Class to manage the BLEU score
 class BLEU:
-    def __init__(self,args_path, model_path,use_eval_data = True, n=100):
+    def __init__(self,args_path, model_path,use_eval_data = True, n=100, model=None):
         with open(args_path, 'r') as f:
             args_data = json.load(f)
         self.args = argparse.Namespace()
@@ -36,7 +36,10 @@ class BLEU:
         if self.lang == 'english':
             self.self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2-medium')
         #TODO: add other languages
-        self.load_model()
+        if model is None:
+            self.load_model()
+        else:
+            self.model = model
         self.model.eval()
         self.model = self.model.to(self.device)
 
