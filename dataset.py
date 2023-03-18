@@ -18,7 +18,7 @@ class ClipGPTFlickr8kDataset(Dataset):
         
         # Choose the tokenizer based on the language
         if self.lang == 'english':
-            self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
+            self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2-medium')
         # if self.lang == 'arabic':
             # self.tokenizer = AutoTokenizer.from_pretrained("akhooli/gpt2-small-arabic")
         if self.lang == 'arabic':

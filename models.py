@@ -3,7 +3,7 @@
 import torch
 import torch.nn as nn
 from torch.nn import functional as nnf
-from transformers import  AutoModelForCausalLM, GPT2LMHeadModel
+from transformers import  AutoModelForCausalLM, GPT2Model
 
 
 class MlpTransformer(nn.Module):
@@ -187,7 +187,7 @@ class ClipCaptionModel(nn.Module):
         # load gpt2 model based on language
         if self.lang == 'english':
             # English Medium GPT2
-            self.gpt = GPT2LMHeadModel.from_pretrained('gpt2')
+            self.gpt = GPT2Model.from_pretrained('gpt2-medium')
         elif self.lang == 'arabic':
             # Arabic Medium GPT2
             self.gpt = AutoModelForCausalLM.from_pretrained("elgeish/gpt2-medium-arabic-poetry")
