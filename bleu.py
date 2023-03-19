@@ -34,7 +34,7 @@ class BLEU:
         if self.lang == 'arabic':
             self.tokenizer = AutoTokenizer.from_pretrained("elgeish/gpt2-medium-arabic-poetry")
         if self.lang == 'english':
-            self.self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2-medium')
+            self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2-medium')
         #TODO: add other languages
         if model is None:
             self.load_model()
