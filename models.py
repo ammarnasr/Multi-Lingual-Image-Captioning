@@ -193,14 +193,21 @@ class ClipCaptionModel(nn.Module):
             self.gpt = AutoModelForCausalLM.from_pretrained("elgeish/gpt2-medium-arabic-poetry")
 
         # set embedding size and initialize The TransformerMapper to Project the CLIP features to the GPT2 embedding space
-        self.gpt_embedding_size = self.gpt.transformer.wte.weight.shape[1]
+        if self.lang == 'english':
+            self.gpt_embedding_size = self.gpt.wte.weight.shape[1]
+        else:
+            self.gpt_embedding_size = self.gpt.transformer.wte.weight.shape[1]
+        
         self.clip_project = TransformerMapper(prefix_size, self.gpt_embedding_size, prefix_length, clip_length, num_layers)
 
     def get_dummy_token(self, batch_size, device) :
         return torch.zeros(batch_size, self.prefix_length, dtype=torch.int64, device=device)
 
     def forward(self, tokens, prefix, mask = None, labels = None):
-        embedding_text = self.gpt.transformer.wte(tokens)
+        if self.lang == 'english':
+            embedding_text = self.gpt.wte(tokens)
+        else:
+            embedding_text = self.gpt.transformer.wte(tokens)
         prefix_projections = self.clip_project(prefix).view(-1, self.prefix_length, self.gpt_embedding_size)
         embedding_cat = torch.cat((prefix_projections, embedding_text), dim=1)
         if labels is not None:
