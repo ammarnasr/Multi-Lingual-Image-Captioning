@@ -3,7 +3,7 @@
 import torch
 import torch.nn as nn
 from torch.nn import functional as nnf
-from transformers import  AutoModelForCausalLM, GPT2Model
+from transformers import  AutoModelForCausalLM, GPT2Model, GPT2LMHeadModel
 
 
 class MlpTransformer(nn.Module):
@@ -187,16 +187,13 @@ class ClipCaptionModel(nn.Module):
         # load gpt2 model based on language
         if self.lang == 'english':
             # English Medium GPT2
-            self.gpt = GPT2Model.from_pretrained('gpt2-medium')
+            self.gpt = GPT2LMHeadModel.from_pretrained('gpt2-medium')
         elif self.lang == 'arabic':
             # Arabic Medium GPT2
             self.gpt = AutoModelForCausalLM.from_pretrained("elgeish/gpt2-medium-arabic-poetry")
 
         # set embedding size and initialize The TransformerMapper to Project the CLIP features to the GPT2 embedding space
-        if self.lang == 'english':
-            self.gpt_embedding_size = self.gpt.wte.weight.shape[1]
-        else:
-            self.gpt_embedding_size = self.gpt.transformer.wte.weight.shape[1]
+        self.gpt_embedding_size = self.gpt.transformer.wte.weight.shape[1]
         
         self.clip_project = TransformerMapper(prefix_size, self.gpt_embedding_size, prefix_length, clip_length, num_layers)
 
@@ -204,10 +201,7 @@ class ClipCaptionModel(nn.Module):
         return torch.zeros(batch_size, self.prefix_length, dtype=torch.int64, device=device)
 
     def forward(self, tokens, prefix, mask = None, labels = None):
-        if self.lang == 'english':
-            embedding_text = self.gpt.wte(tokens)
-        else:
-            embedding_text = self.gpt.transformer.wte(tokens)
+        embedding_text = self.gpt.transformer.wte(tokens)
         prefix_projections = self.clip_project(prefix).view(-1, self.prefix_length, self.gpt_embedding_size)
         embedding_cat = torch.cat((prefix_projections, embedding_text), dim=1)
         if labels is not None:
