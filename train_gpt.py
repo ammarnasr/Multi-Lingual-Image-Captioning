@@ -115,6 +115,8 @@ def train(dataset, model, args , start_epoch = 0):
         tracker['bleu_per_epoch'].append(bleu)
         # save the tracker to a pickle file
         tracker_path = os.path.join(output_dir, f"{model_name}_tracker.pkl")
+        if start_epoch != 0:
+            tracker_path = tracker_path.replace('.pkl', f'-{start_epoch:03d}.pkl')
         with open(tracker_path, 'wb') as f:
             pickle.dump(tracker, f)
     return model
