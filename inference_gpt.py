@@ -10,23 +10,10 @@ import torch.nn.functional as nnf
 from plotting import fix_arabic_text
 from models import  ClipCaptionPrefix
 from transformers import AutoTokenizer, GPT2Tokenizer
+import argparse
+import json
 
 
-
-def load_model(model_path):
-    '''load model from path'''
-    args_path = model_path.replace('.pt', '_args.pkl')
-    with open(args_path, 'rb') as f:
-        args = pickle.load(f)
-    model = ClipCaptionPrefix(
-        prefix_length=args.prefix_length,
-        lang = args.lang ,
-        clip_length=args.prefix_length_clip,
-        prefix_size=512,
-        num_layers=args.num_layers,
-        mapping_type=args.mapping_type)
-    model.load_state_dict(torch.load(model_path, map_location='cpu'))
-    return model , args.prefix_length
 
 
 def beam_search(model, tokenizer, embed, entry_length=20, top_p=0.8, temperature=1., stop_token= '.'):
@@ -84,56 +71,68 @@ def beam_search(model, tokenizer, embed, entry_length=20, top_p=0.8, temperature
     return generated_list[0]
 
 
-def generate_caption(image_path, model, preprocess, clip_model, tokenizer ,prefix_length,  lang ,device):
+
+
+
+class Inference:
+    def __init__(self, args_path, model_path=None, model=None):
+
+        #check if args_path is a string or else
+        if isinstance(args_path, str):    
+            with open(args_path, 'r') as f:
+                args_data = json.load(f)
+            self.args = argparse.Namespace()
+            self.args.__dict__.update(args_data)
+        else:
+            self.args = args_path
+        self.lang = self.args.lang
+        self.model_path = model_path
+        self.eval_prefix = ''
+        self.device = 'cuda' if torch.cuda.is_available() else "cpu"
+        self.clip_model, self.preprocess = clip.load("ViT-B/32", device=self.device, jit=False)
+        # Load the GPT model Tokenizer
+        if self.lang == 'arabic':
+            self.tokenizer = AutoTokenizer.from_pretrained("elgeish/gpt2-medium-arabic-poetry")
+        if self.lang == 'english':
+            self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2-medium')
+        if model is None:
+            self.load_model()
+        else:
+            self.model = model
+        self.model.eval()
+        self.model = self.model.to(self.device)
+
+        
+        self.sample_images_dir = './sample_image'
+        self.sample_images_paths = [os.path.join(self.sample_images_dir, image_name) for image_name in os.listdir(self.sample_images_dir)]
     
-    image = io.imread(image_path)
-    pil_image = PIL.Image.fromarray(image)
-    image = preprocess(pil_image).unsqueeze(0).to(device)
-    with torch.no_grad():
-        prefix = clip_model.encode_image(image).to(device, dtype=torch.float32)
-        prefix_embed = model.clip_project(prefix).reshape(1, prefix_length, -1)
-        generated_text_prefix = beam_search(model, tokenizer, embed=prefix_embed)
 
-    #display pil_image using plt
-    plt.imshow(pil_image)
-    plt.axis('off')
-    if lang == 'arabic':
-        generated_text_prefix = generated_text_prefix#fix_arabic_text(generated_text_prefix)
-    print(generated_text_prefix)
-    plt.title(generated_text_prefix)
-    plt.show()
-
-
-def main(model_path):
-    #Read the language from the model path
-    if 'arabic' in model_path:
-        lang = 'arabic'
-    if 'english' in model_path:
-        lang = 'english'
-    print(f'The Lang is {lang}')
-    # Load the CLIP model
-    device = 'cuda' if torch.cuda.is_available() else "cpu"
-    clip_model, preprocess = clip.load("ViT-B/32", device=device, jit=False)
     
-    # Load the GPT model Tokenizer
-    if lang == 'arabic':
-        tokenizer = AutoTokenizer.from_pretrained("akhooli/gpt2-small-arabic")
-    if lang == 'english':
-        tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 
-    # Load the GPT model
-    model, prefix_length = load_model(model_path)
-    model.eval()
-    model = model.to(device)
+    def load_model(self):
+        model = ClipCaptionPrefix(self.args.prefix_length, lang=self.args.lang, clip_length=self.args.clip_length,
+                                   prefix_size=self.args.prefix_size, num_layers=self.args.num_layers)
+        model.load_state_dict(torch.load(self.model_path, map_location='cpu'))
+        self.model = model
 
 
-    sample_images_dir = './sample_image'
-    sample_images_paths = [os.path.join(sample_images_dir, image_name) for image_name in os.listdir(sample_images_dir)]
-    for image_path in sample_images_paths:
-        generate_caption(image_path, model,preprocess, clip_model, tokenizer, prefix_length, lang, device)
+        
+    def generate_caption(self, image_path = None):
+        if image_path is None:
+            # get a random image from the sample images
+            image_path = self.sample_images_paths[torch.randint(0, len(self.sample_images_paths), (1,)).item()]
+        if not image_path.endswith('.jpg'):
+            image_path = image_path + '.jpg'
+    
+        image = io.imread(image_path)
+        pil_image = PIL.Image.fromarray(image)
+        image = self.preprocess(pil_image).unsqueeze(0).to(self.device)
+        with torch.no_grad():
+            prefix = self.clip_model.encode_image(image).to(self.device, dtype=torch.float32)
+            prefix_embed = self.model.clip_project(prefix).reshape(1, self.args.prefix_length, -1)
+            generated_text_prefix = beam_search(self.model, self.tokenizer, embed=prefix_embed)
+        return generated_text_prefix, image_path
 
 
-if __name__ == '__main__':
-    #Read the model path from the command line
-    model_path = sys.argv[1]
-    main(model_path)
+
+
