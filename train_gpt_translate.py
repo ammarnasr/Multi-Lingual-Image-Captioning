@@ -11,7 +11,7 @@ from torch.nn import functional as nnf
 from torch.utils.data import  DataLoader
 from dataset import ClipGPTFlickr8kDatasetBilingual
 from transformers import  AdamW, get_linear_schedule_with_warmup
-from bleu import BLEU
+from bleu import BLEUBI
 
 def load_model(args, src_lang):
     '''
@@ -78,7 +78,11 @@ def train(dataset, model, args , start_epoch = 0):
             tokens_arabic, mask_arabic = tokens_arabic.to(device), mask_arabic.to(device)
             tokens_english, mask_english = tokens_english.to(device), mask_english.to(device)
             prefix = prefix.to(device, dtype=torch.float32)
-            outputs = model(tokens_english, prefix, mask_english)
+
+            
+            outputs = model(tokens_english, prefix, mask_english)#
+
+
             logits = outputs.logits[:, dataset.prefix_length - 1: -1]
             loss = nnf.cross_entropy(logits.reshape(-1, logits.shape[-1]), tokens_arabic.flatten(), ignore_index=0)
             loss.backward()
@@ -87,6 +91,14 @@ def train(dataset, model, args , start_epoch = 0):
             optimizer.zero_grad()
             progress.set_postfix({"loss": loss.item()})
             progress.update()
+
+
+            print(f'\n>>> Calculating BLEU score for batch {idx} in epoch {epoch}')
+            blue_obj = BLEUBI(args, model=model)
+            bleu_score = blue_obj.calculate_bleu(n=1)
+            print(f'>>> BLEU score for batch {idx} in epoch {epoch} is {bleu_score}')
+
+
             if (idx + 1) % 100 == 0:
                 torch.save(model.state_dict(),os.path.join(output_dir, f"{model_name}_latest.pt"),)
             # end the batch timer
