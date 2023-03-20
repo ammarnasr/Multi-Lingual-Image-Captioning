@@ -41,7 +41,7 @@ def load_model(args):
     return model , args, epoch_number
 
 
-def train(dataset, model, args , start_epoch = 0):
+def train(dataset, model, args , start_epoch = 0, dev_ratio = 0.3):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     batch_size = args.batch_size
     epochs = args.epochs
@@ -56,19 +56,35 @@ def train(dataset, model, args , start_epoch = 0):
     model = model.to(device)
     model.train()
     optimizer = AdamW(model.parameters(), lr=lr)
-    #adjust the dataloader to the percentage of the dataset
-    rand_inds = torch.randperm(len(dataset))[:int(len(dataset) * precentage)]
-    sampler = torch.utils.data.SubsetRandomSampler(rand_inds)
+
+    if precentage < 1:
+        #adjust the dataloader to the percentage of the dataset
+        rand_inds = torch.randperm(len(dataset))[:int(len(dataset) * precentage)]
+        sampler = torch.utils.data.SubsetRandomSampler(rand_inds)
+
+
+    if dev_ratio > 0:
+        #split the dataset to train and dev
+        train_size = int((1 - dev_ratio) * len(dataset))
+        dev_size = len(dataset) - train_size
+        train_dataset, dev_dataset = torch.utils.data.random_split(dataset, [train_size, dev_size])
+        train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, drop_last=True, num_workers=2)
+        dev_dataloader = DataLoader(dev_dataset, batch_size=batch_size, shuffle=False, drop_last=True, num_workers=2)
+
     train_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, drop_last=True, num_workers=2, sampler=sampler)
     scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=warmup_steps, num_training_steps=epochs * len(train_dataloader))
 
     # Create one Dictionary to track: loss per batch, loss per epoch, time per epoch and time per batch and the BLEU score per epoch
-    tracker = {'loss_per_batch': [], 'loss_per_epoch': [], 'time_per_epoch': [], 'time_per_batch': [], 'bleu_per_epoch': []}
+    tracker = {'loss_per_batch': [], 'loss_per_epoch': [], 'time_per_epoch': [], 'time_per_batch': [], 'bleu_per_epoch': [],
+               'loss_per_batch_dev': [], 'loss_per_epoch_dev': [], 'time_per_epoch_dev': [], 'time_per_batch_dev': [], 'bleu_per_epoch_dev': []
+               }
+
 
     for epoch in range(start_epoch, epochs+start_epoch):
         print(f">>> Training epoch {epoch} out of {epochs+start_epoch}")
         sys.stdout.flush()
         progress = tqdm(total=len(train_dataloader), desc=model_name)
+        progress_dev = tqdm(total=len(dev_dataloader), desc=model_name)
         # start the epoch timer
         epoch_start = time.time()
         for idx, (tokens, mask, prefix) in enumerate(train_dataloader):
@@ -93,7 +109,32 @@ def train(dataset, model, args , start_epoch = 0):
             tracker['time_per_batch'].append(batch_end - batch_start)
             # append the batch loss to the tracker
             tracker['loss_per_batch'].append(loss.item())
+
+
+        if dev_ratio > 0:
+            for idx, (tokens, mask, prefix) in enumerate(dev_dataloader):
+                # start the batch timer
+                batch_start = time.time()
+                model.zero_grad()
+                tokens, mask, prefix = tokens.to(device), mask.to(device), prefix.to(device, dtype=torch.float32)
+                outputs = model(tokens, prefix, mask)
+                logits = outputs.logits[:, dataset.prefix_length - 1: -1]
+                loss = nnf.cross_entropy(logits.reshape(-1, logits.shape[-1]), tokens.flatten(), ignore_index=0)
+                progress_dev.set_postfix({"loss": loss.item()})
+                progress_dev.update()
+                # end the batch timer
+                batch_end = time.time()
+                # append the batch time to the tracker
+                tracker['time_per_batch_dev'].append(batch_end - batch_start)
+                # append the batch loss to the tracker
+                tracker['loss_per_batch_dev'].append(loss.item())
+
+
+
+
+
         progress.close()
+        progress_dev.close()
         if epoch % args.save_every == 0 or epoch == epochs - 1 + start_epoch:
             model_path = os.path.join(output_dir, f"{model_name}-{epoch:03d}.pt")
             torch.save(model.state_dict(), model_path)
