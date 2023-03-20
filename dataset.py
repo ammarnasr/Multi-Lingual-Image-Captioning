@@ -88,8 +88,7 @@ class ClipGPTFlickr8kDatasetBilingual(Dataset):
     def __init__(self, data_path = 'data/embeddings/multilingual_CLIP-ViT-B-32_embeddings.pkl',  prefix_length = 10 , normalize_prefix=False):
         self.prefix_length = prefix_length
         self.normalize_prefix = normalize_prefix
-        self.tokenizer_english = GPT2Tokenizer.from_pretrained('gpt2-medium')
-        self.tokenizer_arabic  = AutoTokenizer.from_pretrained("elgeish/gpt2-medium-arabic-poetry")
+        self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2-medium')
 
 
         # Load the data
@@ -113,10 +112,10 @@ class ClipGPTFlickr8kDatasetBilingual(Dataset):
         max_seq_len_arabic = 0
         max_seq_len_english = 0
         for caption in captions_raw:
-            self.captions_tokens_arabic.append(torch.tensor(self.tokenizer_arabic.encode(caption['arabic_caption']), dtype=torch.int64))
+            self.captions_tokens_arabic.append(torch.tensor(self.tokenizer.encode(caption['arabic_caption']), dtype=torch.int64))
             self.caption2embedding.append(caption["clip_embedding"])
             max_seq_len_arabic = max(max_seq_len_arabic, self.captions_tokens_arabic[-1].shape[0])
-            self.captions_tokens_english.append(torch.tensor(self.tokenizer_english.encode(caption['english_caption']), dtype=torch.int64))
+            self.captions_tokens_english.append(torch.tensor(self.tokenizer.encode(caption['english_caption']), dtype=torch.int64))
             max_seq_len_english = max(max_seq_len_english, self.captions_tokens_english[-1].shape[0])
            
         
