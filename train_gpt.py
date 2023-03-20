@@ -41,7 +41,7 @@ def load_model(args):
     return model , args, epoch_number
 
 
-def train(dataset, model, args , start_epoch = 0, dev_ratio = 0.3):
+def train(dataset, model, args , start_epoch = 0):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     batch_size = args.batch_size
     epochs = args.epochs
@@ -50,6 +50,7 @@ def train(dataset, model, args , start_epoch = 0, dev_ratio = 0.3):
     output_dir = args.output_dir
     model_name = args.model_name
     precentage = args.percentage
+    dev_ratio = args.dev_ratio
 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -198,6 +199,8 @@ if __name__ == '__main__':
     parser.add_argument('--warmup_steps',     type=int, default=1000, help='The number of warmup steps')
     #add argumnet for the precentage of the dataset to use
     parser.add_argument('--percentage',       type=float, default=1, help='The percentage of the dataset to use')
+    #add argument for dev ratio
+    parser.add_argument('--dev_ratio',        type=float, default=0.3, help='The ratio of the dataset to use for validation')
     
     # parse the arguments
     args = parser.parse_args()
