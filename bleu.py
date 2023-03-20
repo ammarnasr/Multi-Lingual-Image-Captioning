@@ -48,7 +48,9 @@ class BLEU:
 
     
     def generate_caption(self, image_path):
-        image_path = image_path + '.jpg'
+        if not image_path.endswith('.jpg'):
+            image_path = image_path + '.jpg'
+        
         image = io.imread(image_path)
         pil_image = PIL.Image.fromarray(image)
         image = self.preprocess(pil_image).unsqueeze(0).to(self.device)
@@ -60,7 +62,7 @@ class BLEU:
 
 
 
-    def calculate_bleu(self, n= 100):
+    def calculate_bleu(self, n= 100, ngram_weights=(0.25, 0.25, 0.25, 0.25)):
         candidates = []
         references = []
         # check if n is int or list
@@ -76,7 +78,9 @@ class BLEU:
             candidates.append(prediction.split(' '))
             references.append([r.split(' ') for r in captions_per_image[i]])
 
-        self.score = corpus_bleu(references, candidates) *100
+        self.candidates = candidates
+        self.references = references
+        self.score = corpus_bleu(references, candidates, ngram_weights) *100
         print(f'The BLEU for Langauge {self.lang} score is {self.score}')
         return self.score
 
