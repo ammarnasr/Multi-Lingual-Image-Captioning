@@ -70,9 +70,23 @@ def train(dataset, model, args , start_epoch = 0):
         #split the dataset to train and dev
         train_size = int((1 - dev_ratio) * len(dataset))
         dev_size = len(dataset) - train_size
-        train_dataset, dev_dataset = torch.utils.data.random_split(dataset, [train_size, dev_size])
-        train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, drop_last=True, num_workers=2)
-        dev_dataloader = DataLoader(dev_dataset, batch_size=batch_size, shuffle=False, drop_last=True, num_workers=2)
+
+        # create the train and dev indices
+        train_indices = list(range(train_size))
+        dev_indices = list(range(train_size, len(dataset)))
+
+        # create the train and dev samplers
+        train_sampler = torch.utils.data.SubsetRandomSampler(train_indices)
+        dev_sampler = torch.utils.data.SubsetRandomSampler(dev_indices)
+
+        # create the train and dev dataloaders
+        train_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, drop_last=True, num_workers=2, sampler=train_sampler)
+        dev_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, drop_last=True, num_workers=2, sampler=dev_sampler)
+
+
+
+
+
 
     scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=warmup_steps, num_training_steps=epochs * len(train_dataloader))
 
