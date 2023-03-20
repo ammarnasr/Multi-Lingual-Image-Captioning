@@ -62,6 +62,8 @@ def train(dataset, model, args , start_epoch = 0):
         #adjust the dataloader to the percentage of the dataset
         rand_inds = torch.randperm(len(dataset))[:int(len(dataset) * precentage)]
         sampler = torch.utils.data.SubsetRandomSampler(rand_inds)
+        train_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, drop_last=True, num_workers=2, sampler=sampler)
+
 
 
     if dev_ratio > 0:
@@ -72,7 +74,6 @@ def train(dataset, model, args , start_epoch = 0):
         train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, drop_last=True, num_workers=2)
         dev_dataloader = DataLoader(dev_dataset, batch_size=batch_size, shuffle=False, drop_last=True, num_workers=2)
 
-    train_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, drop_last=True, num_workers=2, sampler=sampler)
     scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=warmup_steps, num_training_steps=epochs * len(train_dataloader))
 
     # Create one Dictionary to track: loss per batch, loss per epoch, time per epoch and time per batch and the BLEU score per epoch
@@ -84,8 +85,9 @@ def train(dataset, model, args , start_epoch = 0):
     for epoch in range(start_epoch, epochs+start_epoch):
         print(f">>> Training epoch {epoch} out of {epochs+start_epoch}")
         sys.stdout.flush()
-        progress = tqdm(total=len(train_dataloader), desc=model_name)
-        progress_dev = tqdm(total=len(dev_dataloader), desc=model_name)
+        print(f'lenght of train dataloader: {len(train_dataloader)}')
+        print(f'lenght of dev dataloader: {len(dev_dataloader)}')
+        progress = tqdm(total=len(train_dataloader)+len(dev_dataloader), desc=model_name)
         # start the epoch timer
         epoch_start = time.time()
         for idx, (tokens, mask, prefix) in enumerate(train_dataloader):
@@ -121,8 +123,8 @@ def train(dataset, model, args , start_epoch = 0):
                 outputs = model(tokens, prefix, mask)
                 logits = outputs.logits[:, dataset.prefix_length - 1: -1]
                 loss = nnf.cross_entropy(logits.reshape(-1, logits.shape[-1]), tokens.flatten(), ignore_index=0)
-                progress_dev.set_postfix({"loss": loss.item()})
-                progress_dev.update()
+                progress.set_postfix({"dev loss": loss.item()})
+                progress.update()
                 # end the batch timer
                 batch_end = time.time()
                 # append the batch time to the tracker
@@ -135,7 +137,6 @@ def train(dataset, model, args , start_epoch = 0):
 
 
         progress.close()
-        progress_dev.close()
         if epoch % args.save_every == 0 or epoch == epochs - 1 + start_epoch:
             model_path = os.path.join(output_dir, f"{model_name}-{epoch:03d}.pt")
             torch.save(model.state_dict(), model_path)
