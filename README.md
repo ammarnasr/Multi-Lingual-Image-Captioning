@@ -17,10 +17,9 @@ Google Colab Notebook: <a href="https://colab.research.google.com/drive/1dOqoCRq
 
 
 ## Description  
---
+This paper proposes a method for training image captioning networks on languages other than English using pre-trained models and a transformer network. We employ CLIP as our image encoder and fine-tune different versions of the GPT-2 language model as decoders for our target language. We evaluate our approach on English, German, and Arabic, achieving comparable results to state-of-the-art models even with smaller datasets. Our proposed method has implications for bridging the gap between English and other language image captioning, enabling more applications to benefit from this technology.
 
 ## Examples
---
 
 ## Training prerequisites
 
