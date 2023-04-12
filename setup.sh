@@ -18,12 +18,22 @@ cd ./Multi-Lingual-Image-Captioning
 echo "====================Current Directory: ===================="
 pwd
 
-# #Download and Extract The Checkpoints
+#Download and Extract The Checkpoints
 # gdown --id 1_uX98Y_ykKO_s2d0l-lUPgdhUrlsrRyj
 # unzip -qq ./checkpoints.zip -d ./
 # rm ./checkpoints.zip
-# echo "====================Checkpoints are downloaded: ===================="
-# ls ./checkpoints
+
+mkdir checkpoints
+cd ./checkpoints
+# Args 
+gdown --id 1fA43FIoEa9yrJvZxOI_frhDaCd1Hw2E6
+# Tracker 
+gdown --id 1CABvld2BmiiSj_sxH4diLBa15s901gns
+# Model
+gdown --id 1MAlKvhcxZwmN1KBLhfW85UTu54OIE-So
+cd ../
+echo "====================Checkpoints are downloaded: ===================="
+ls ./checkpoints
 
 
 #change directory to the evaluation folder
