@@ -5,7 +5,7 @@
 
 # Multi-Lingual-Image-Captioning.
 
-Google Colab Notebook: <a href="https://colab.research.google.com/drive/1dOqoCRqcan56fOOPNTLFQcBtg0ILO4wL?usp=sharing"><img src="https://colab.research.google.com/assets/colab-badge.svg" height=20></a>  
+Google Colab Notebook: <a https://colab.research.google.com/drive/10lxPrsQFSLQGrmsTk5p6Zb2Mj1v9Ky-N?usp=sharing"><img src="https://colab.research.google.com/assets/colab-badge.svg" height=20></a>  
 
 
 
